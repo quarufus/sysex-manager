@@ -1,57 +1,39 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Page Title</title>
+  <title>Page Title</title>
+  <script src="script.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="head">
     <h1>SysEx IO</h1>
     <form>
-      <label for="device">Device</label>
-      <select name="device">
-        <option value="one">One</option>
+      <label for="device" id="device">MIDI in device</label>
+      <select name="device" id="select">
       </select>
     </form>
   </div>
-    <div class="grid">
-      <div class="win"></div>
-      <div class="win"></div>
+  <input type="checkbox" id="clock" name="clock">
+  <label for="clock">Clock</label>
+  <input type="checkbox" id="sysex" name="sysex">
+  <label for="sysex">SysEx</label>
+  <input type="checkbox" id="onoff" name="onoff">
+  <label for="onoff">Note On/Off</label>
+  <input type="checkbox" id="cc" name="cc">
+  <label for="cc">Control Change</label>
+  <div class="grid">
+    <div class="win"></div>
+    <div class="win" id="in">
+      <!-- <tr> -->
+      <!-- <th>Status</th> -->
+      <!-- <th>Byte1</th> -->
+      <!-- <th>Byte2</th> -->
+      <!-- </tr> -->
     </div>
+  </div>
 </body>
-
-<script>
-  navigator.requestMIDIAccess().then((access) => {
-    const inputs = access.inputs.values();
-    const outputs = access.outputs.values();
-
-    console.log(inputs, outputs);
-
-    access.onstatechange = (event) => {
-      console.log(event.port.name, event.port.manufacturer, event.port.state);
-    };
-  }).catch((error) => {console.error(error)});
-</script>
-
-<style>
-  h1 {
-    margin: 0;
-  }
-  .head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin: 0.67em 0 0.67em 0;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: auto auto;
-    gap: 10px;
-    height: 80vh;
-  }
-  .win {
-    border: 1px solid black;
-    height: 100%;
-  }
-</style>
 
 </html>
