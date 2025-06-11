@@ -9,23 +9,43 @@
 
 <body>
   <div class="head">
-    <h1>SysEx IO</h1>
+    <h1>MIDI IO</h1>
+  </div>
+  <div class="grid">
+    <div></div>
+    <div>
+      <input type="checkbox" id="clock" name="clock">
+      <label for="clock">Clock</label>
+      <input type="checkbox" id="onoff" name="onoff" checked>
+      <label for="onoff">Note On/Off</label>
+      <input type="checkbox" id="after" name="after" checked>
+      <label for="after">Aftertouch</label>
+      <input type="checkbox" id="cc" name="cc" checked>
+      <label for="cc">Control Change</label>
+      <input type="checkbox" id="pc" name="pc" checked>
+      <label for="pc">Program Change</label>
+      <input type="checkbox" id="pressure" name="pressure" checked>
+      <label for="pressure">Channel Pressure</label>
+      <input type="checkbox" id="bend" name="bend" checked>
+      <label for="bend">Pitch Bend</label>
+      <input type="checkbox" id="sysex" name="sysex" checked>
+      <label for="sysex">SysEx</label>
+    </div>
+    <div class="out_head">
+      <form>
+        <label for="device_out" id="device_out">MIDI out device</label>
+        <select name="device_out" id="select_out"></select>
+      </form>
+      <input type="file" id="file_input">
+    </div>
     <form>
       <label for="device" id="device">MIDI in device</label>
       <select name="device" id="select">
       </select>
     </form>
-  </div>
-  <input type="checkbox" id="clock" name="clock">
-  <label for="clock">Clock</label>
-  <input type="checkbox" id="sysex" name="sysex">
-  <label for="sysex">SysEx</label>
-  <input type="checkbox" id="onoff" name="onoff">
-  <label for="onoff">Note On/Off</label>
-  <input type="checkbox" id="cc" name="cc">
-  <label for="cc">Control Change</label>
-  <div class="grid">
-    <div class="win"></div>
+    <!-- <div class="win"> -->
+    <textarea class="win" id="t" onkeydown="if (event.keyCode == 13) {sendInput()}"></textarea>
+    <!-- </div> -->
     <div class="win" id="in">
       <!-- <tr> -->
       <!-- <th>Status</th> -->
@@ -33,6 +53,7 @@
       <!-- <th>Byte2</th> -->
       <!-- </tr> -->
     </div>
+    <button onclick="sendInput()">Send</button>
   </div>
 </body>
 

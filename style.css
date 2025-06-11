@@ -9,9 +9,16 @@ h1 {
   margin: 0.67em 0 0.67em 0;
 }
 
+.out_head {
+  display: flex;
+  justify-content: space-between;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 49.7% 49.7%;
+  grid-template-rows: min-content min-content auto 50px;
+  margin: 10px 0 10px 0;
   gap: 10px;
   height: 80vh;
 }
@@ -27,6 +34,12 @@ th,
 td {
   border: 1px solid black;
   border-collapse: collapse;
+}
+
+#t {
+  /* padding-bottom: 77.8vh; */
+  /* width: 99.1%; */
+  resize: none;
 }
 
 #in {
