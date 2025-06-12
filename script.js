@@ -10,6 +10,7 @@ navigator.requestMIDIAccess({ sysex: true}).then((access) => {
   midiInputs = Array.from(inputs);
   midiOutputs = Array.from(outputs);
   selectedInput = midiInputs[0].id;
+  midiInputs.find((d) => d.id == selectedInput).onmidimessage = handleMIDIMessage;
   selectedOutput = midiOutputs[0].id;
   var selectInput = document.getElementById("select");
   var selectOutput = document.getElementById("select_out");
@@ -120,7 +121,7 @@ function handleMIDIMessage(message) {
   var info = new Array();
   const input = midiInputs.find((device) => device.id == selectedInput);
   info.push(Math.round(message.timeStamp).toString().padStart(7, "0"));
-  info.push(input.manufacturer != "" ? input.manufacturer : s.slice(1, 4).join(" "));
+  info.push((input.manufacturer == "" && status == 240) ? s.slice(1, 4).join(" ") : input.manufacturer);
   var device = input.name;
   if (status == 240) {
     device = s.slice(4, 6).join(" ");
@@ -136,6 +137,8 @@ function handleMIDIMessage(message) {
     row.appendChild(td);
   });
   document.getElementById('table').appendChild(row);
+  const area = document.getElementById('in');
+  area.scrollTop = area.scrollHeight;
 }
 
 function readFile(e) {
@@ -189,7 +192,17 @@ function updateOutputs(outputs) {
 
 function clearOutput() {
   const el = document.getElementById('in');
-  el.innerHTML = "";
+  el.innerHTML = `
+      <table id="table">
+        <tr>
+          <th style="width: 15%;">Timestamp</th>
+          <th style="width: 20%;">Manufacturer</th>
+          <th style="width: 10%;">Device</th>
+          <th style="width: 30%;">Message</th>
+          <th style="width: 25%;">Raw</th>
+        </tr>
+      </table>
+  `;
 }
 
 function messageStatus(message) {
