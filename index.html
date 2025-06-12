@@ -38,11 +38,14 @@
       </form>
       <input type="file" id="file_input">
     </div>
-    <form>
-      <label for="device" id="device">MIDI in device</label>
-      <select name="device" id="select">
-      </select>
-    </form>
+    <div class="in_head">
+      <form>
+        <label for="device" id="device">MIDI in device</label>
+        <select name="device" id="select">
+        </select>
+      </form>
+      <button id="download">Download last message</button>
+    </div>
     <!-- <div class="win"> -->
     <textarea class="win" id="t" onkeydown="if (event.keyCode == 13) {sendInput()}"></textarea>
     <!-- </div> -->

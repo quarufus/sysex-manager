@@ -60,10 +60,27 @@ navigator.requestMIDIAccess({ sysex: true}).then((access) => {
     updateInputs(midiInputs);
     updateOutputs(midiOutputs);
   };
+
+  const download = document.getElementById('download');
+  download.addEventListener("click", () => {
+    var binary = new Array();
+    for (var i = 0; i < lastMessage.length; i++) {
+      binary[i] = parseInt(lastMessage[i].toString(16), 16);
+    }
+    var byteArray = new Uint8Array(binary);
+    const text = lastMessage.join(" ");
+    const blob = new Blob([byteArray], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.download = "data.syx";
+    a.href = url;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  });
+  
 }).catch((error) => {console.error(error)});
 
 function handleMIDIMessage(message) {
-  lastMessage = message.data;
   // console.log(`Received: ${message.data}`);
   var in_win = document.getElementById("in");
   const [status, ...dataBytes] = message.data;
@@ -92,6 +109,8 @@ function handleMIDIMessage(message) {
   if (status >= 224 && status <= 239 && !document.getElementById("bend").checked) {
     return;
   }
+
+  lastMessage = message.data;
 
   var s = [];
   message.data.forEach((d) => {

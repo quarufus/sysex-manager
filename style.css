@@ -9,7 +9,8 @@ h1 {
   margin: 0.67em 0 0.67em 0;
 }
 
-.out_head {
+.out_head,
+.in_head {
   display: flex;
   justify-content: space-between;
 }
