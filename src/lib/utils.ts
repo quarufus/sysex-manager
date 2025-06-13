@@ -1,4 +1,7 @@
-export function messageStatus(message: MIDIMessageEvent) {
+export function messageStatus(message: MIDIMessageEvent): string {
+	if (!message.data) {
+		return '';
+	}
 	const status = message.data[0];
 	switch (true) {
 		case status >= 128 && status <= 143:
@@ -31,5 +34,7 @@ export function messageStatus(message: MIDIMessageEvent) {
 			return 'Active Sensing';
 		case status == 254:
 			return 'Reset';
+		default:
+			return '';
 	}
 }

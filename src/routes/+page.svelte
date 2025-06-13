@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { messageStatus } from '$lib/utils';
+	import { messageStatus } from '$lib';
+	import type { Filters, Message } from '$lib';
 
-	let selectedInput = $state('');
-	let selectedOutput = $state('');
-	let midiInputs = $state([]);
-	let midiOutputs = $state([]);
-	let messages = $state([]);
-	let idx = $state(0);
-	let textarea = $state('');
-	let filters = $state({
+	let selectedInput: string = $state('');
+	let selectedOutput: string = $state('');
+	let midiInputs: MIDIInput[] = $state([]);
+	let midiOutputs: MIDIOutput[] = $state([]);
+	let messages: Message[] = $state([]);
+	let idx: number = $state(0);
+	let textarea: string = $state('');
+
+	const filters: Filters = $state({
 		clock: false,
 		sysex: true,
 		note: true,
@@ -19,21 +21,22 @@
 		pressure: true,
 		bend: true
 	});
-	let pause = $state(0);
-	let files;
-	let element;
-	let tbody;
+
+	let pause: number = $state(0);
+	let files: FileList | null = $state(null);
+	let element!: HTMLDivElement;
+	let tbody!: HTMLTableSectionElement;
 
 	onMount(() => {
 		navigator
 			.requestMIDIAccess({ sysex: true })
 			.then(handleMIDI)
-			.catch((error) => {
+			.catch((error: unknown) => {
 				console.error(error);
 			});
 	});
 
-	function handleMIDI(access) {
+	function handleMIDI(access: MIDIAccess) {
 		midiInputs = Array.from(access.inputs.values());
 		midiOutputs = Array.from(access.outputs.values());
 		selectedInput = midiInputs[0].id;
@@ -46,7 +49,10 @@
 		};
 	}
 
-	function handleMIDIMessage(msg) {
+	function handleMIDIMessage(msg: MIDIMessageEvent) {
+		if (!msg.data) {
+			return;
+		}
 		const status = msg.data[0];
 		if (status == 248 && !filters.clock) {
 			return;
@@ -69,13 +75,16 @@
 		if (status >= 208 && status <= 223 && !filters.pressure) {
 			return;
 		}
-		if (status >= 224 && status <= 239 && !bend) {
+		if (status >= 224 && status <= 239 && !filters.bend) {
 			return;
 		}
 
 		const device = midiInputs.find((d) => d.id == selectedInput);
+		if (!device?.manufacturer || !device.name) {
+			return;
+		}
 		idx++;
-		let s = [];
+		const s: string[] = [];
 		msg.data.forEach((v) => s.push(v.toString(16).toUpperCase().padStart(2, '0')));
 		messages.push({
 			id: idx,
@@ -96,10 +105,12 @@
 			.map((c) => parseInt(c, 16)); */
 		let i = 0;
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
-		const lines = textarea.split("\n");
-		let interval = setInterval(function () {
-			let data = lines[i].split(' ').map(c => parseInt(c, 16));
-			device.send(data);
+		const lines = textarea.split('\n');
+		const interval = setInterval(function () {
+			const data = lines[i].split(' ').map((c) => parseInt(c, 16));
+			if (device) {
+				device.send(data);
+			}
 			i++;
 			if (i == lines.length) {
 				clearInterval(interval);
@@ -112,48 +123,50 @@
 			input.onmidimessage = null;
 		});
 		const device = midiInputs.find((d) => d.id == selectedInput);
-		device.onmidimessage = handleMIDIMessage;
+		if (device) {
+			device.onmidimessage = handleMIDIMessage;
+		}
 	}
 
 	async function loadFile() {
 		if (!files) {
 			return;
 		}
-		let text = await files[0].bytes();
+		const text = await files[0].bytes();
 		const hex = [];
-		for (var i = 0; i < text.length; i++) {
-			hex.push(text[i].toString(16).toUpperCase().padStart(2, '0'));
+		for (const c of text) {
+			hex.push(c.toString(16).toUpperCase().padStart(2, '0'));
 		}
 		textarea = hex.join(' ').replaceAll('F7 ', 'F7\n');
-		let msgLengths = [];
+		const msgLengths = [];
 		while (hex.length > 0) {
 			msgLengths.push(hex.splice(0, hex.indexOf('F7') + 1).length);
 		}
 		//console.log(msgLengths);
 	}
 
-	function downloadMessage(msg) {
-		var binary = [];
-		for (var i = 0; i < msg.length; i++) {
+	function downloadMessage(msg: Uint8Array) {
+		const binary = [];
+		for (let i = 0; i < msg.length; i++) {
 			binary[i] = parseInt(msg[i].toString(16), 16);
 		}
-		var byteArray = new Uint8Array(binary);
+		const byteArray = new Uint8Array(binary);
 		const blob = new Blob([byteArray], { type: 'application/octet-stream' });
 		const url = URL.createObjectURL(blob);
-		var a = document.createElement('a');
+		const a = document.createElement('a');
 		a.download = 'data.syx';
 		a.href = url;
 		a.click();
 		window.URL.revokeObjectURL(url);
 	}
 
-	function onKeyDown(e) {
-		if (e.keyCode == 13) {
+	function onKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
 			console.log('lala');
 		}
 	}
 
-	const scrollToBottom = async (node) => {
+	const scrollToBottom = (node: HTMLDivElement) => {
 		node.scrollTop = node.scrollHeight;
 	};
 </script>
@@ -180,7 +193,7 @@
 		<label for="bend">Pitch Bend</label>
 		<input type="checkbox" id="sysex" name="sysex" bind:checked={filters.sysex} />
 		<label for="sysex">SysEx</label>
-		<input type="range" name="pause" min="0" max="1000" bind:value={pause}/>
+		<input type="range" name="pause" min="0" max="1000" bind:value={pause} />
 		<label for="pause">Pause between messages</label>
 	</div>
 	<div class="flex justify-between">
@@ -238,7 +251,9 @@
 							><div class="flex justify-between">
 								{msg.raw}<button
 									class="cursor-grab border"
-									onclick={() => downloadMessage(msg.data)}>dl</button
+									onclick={() => {
+										downloadMessage(msg.data);
+									}}>dl</button
 								>
 							</div></td
 						>
