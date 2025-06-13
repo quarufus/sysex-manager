@@ -19,6 +19,7 @@
 		pressure: true,
 		bend: true
 	});
+	let pause = $state(0);
 	let files;
 	let element;
 	let tbody;
@@ -89,12 +90,21 @@
 	}
 
 	function sendInput() {
-		const data = textarea
+		/* const data = textarea
 			.replaceAll('\n', ' ')
 			.split(' ')
-			.map((c) => parseInt(c, 16));
+			.map((c) => parseInt(c, 16)); */
+		let i = 0;
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
-		device.send(data);
+		const lines = textarea.split("\n");
+		let interval = setInterval(function () {
+			let data = lines[i].split(' ').map(c => parseInt(c, 16));
+			device.send(data);
+			i++;
+			if (i == lines.length) {
+				clearInterval(interval);
+			}
+		}, pause / 10);
 	}
 
 	function onInputChange() {
@@ -115,6 +125,11 @@
 			hex.push(text[i].toString(16).toUpperCase().padStart(2, '0'));
 		}
 		textarea = hex.join(' ').replaceAll('F7 ', 'F7\n');
+		let msgLengths = [];
+		while (hex.length > 0) {
+			msgLengths.push(hex.splice(0, hex.indexOf('F7') + 1).length);
+		}
+		//console.log(msgLengths);
 	}
 
 	function downloadMessage(msg) {
@@ -165,6 +180,8 @@
 		<label for="bend">Pitch Bend</label>
 		<input type="checkbox" id="sysex" name="sysex" bind:checked={filters.sysex} />
 		<label for="sysex">SysEx</label>
+		<input type="range" name="pause" min="0" max="1000" bind:value={pause}/>
+		<label for="pause">Pause between messages</label>
 	</div>
 	<div class="flex justify-between">
 		<form>
