@@ -84,8 +84,7 @@
 			return;
 		}
 		idx++;
-		const s: string[] = [];
-		msg.data.forEach((v) => s.push(v.toString(16).toUpperCase().padStart(2, '0')));
+		const s: string[] = Array.from(msg.data).map((v) => v.toString(16).toUpperCase().padStart(2, '0'));
 		messages.push({
 			id: idx,
 			timestamp: msg.timeStamp,
