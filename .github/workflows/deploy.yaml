@@ -29,6 +29,12 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Svelte check
+        run: npm run check
+        
+      - name: Run ESLint
+        run: npm run lint
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
         with:
