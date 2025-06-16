@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { messageStatus } from '$lib';
 	import type { Filters, Message } from '$lib';
+	import { getManufacturer } from '$lib';
+	import { MessageRow } from '$lib';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
 	let midiInputs: MIDIInput[] = $state([]);
 	let midiOutputs: MIDIOutput[] = $state([]);
 	let messages: Message[] = $state([]);
+	let outgoingMessages: Message[] = $state([]);
 	let idx: number = $state(0);
-	let textarea: string = $state('');
 
 	const filters: Filters = $state({
 		clock: false,
@@ -83,37 +84,32 @@
 		if (!device?.manufacturer || !device.name) {
 			return;
 		}
-		idx++;
-		const s: string[] = Array.from(msg.data).map((v) =>
-			v.toString(16).toUpperCase().padStart(2, '0')
-		);
-		messages.push({
-			id: idx,
-			timestamp: msg.timeStamp,
-			manufacturer: device.manufacturer,
-			device: device.name,
-			message: messageStatus(msg),
-			raw: s.join(' '),
-			data: msg.data
+		const lines = msg.data[0] == 240 ? splitSysExData(msg.data) : [msg.data];
+		lines.forEach((l) => {
+			const s = Array.from(l).map((v) => v.toString(16).toUpperCase().padStart(2, '0'));
+			console.log(s.slice(1, 4).join(' '));
+			messages.push({
+				id: idx,
+				manufacturerId: s.slice(1, 4),
+				manufacturer: getManufacturer(s.slice(1, 4)),
+				modelId: s.slice(4, 6),
+				data: s,
+				raw: l
+			});
+			idx++;
 		});
 		scrollToBottom(element);
 	}
 
-	function sendInput() {
-		/* const data = textarea
-			.replaceAll('\n', ' ')
-			.split(' ')
-			.map((c) => parseInt(c, 16)); */
+	function sendSysEx() {
 		let i = 0;
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
-		const lines = textarea.split('\n');
 		const interval = setInterval(function () {
-			const data = lines[i].split(' ').map((c) => parseInt(c, 16));
 			if (device) {
-				device.send(data);
+				device.send(outgoingMessages[i].raw);
 			}
 			i++;
-			if (i == lines.length) {
+			if (i == outgoingMessages.length) {
 				clearInterval(interval);
 			}
 		}, pause / 10);
@@ -133,38 +129,34 @@
 		if (!files) {
 			return;
 		}
-		const text = await files[0].bytes();
-		const hex = [];
-		for (const c of text) {
-			hex.push(c.toString(16).toUpperCase().padStart(2, '0'));
-		}
-		textarea = hex.join(' ').replaceAll('F7 ', 'F7\n');
-		const msgLengths = [];
-		while (hex.length > 0) {
-			msgLengths.push(hex.splice(0, hex.indexOf('F7') + 1).length);
-		}
-		//console.log(msgLengths);
+		const buffer = await files[0].arrayBuffer();
+		const bytes = new Uint8Array(buffer);
+		outgoingMessages = [];
+		const lines = splitSysExData(bytes);
+		lines.forEach((l) => {
+			const s = Array.from(l).map((v) => v.toString(16).padStart(2, '0'));
+			outgoingMessages.push({
+				id: idx + 1000,
+				manufacturerId: s.slice(1, 4),
+				manufacturer: getManufacturer(s.slice(1, 4)),
+				modelId: s.slice(4, 6),
+				data: s,
+				raw: l
+			});
+			idx++;
+		});
 	}
 
-	function downloadMessage(msg: Uint8Array) {
-		const binary = [];
-		for (let i = 0; i < msg.length; i++) {
-			binary[i] = parseInt(msg[i].toString(16), 16);
+	function splitSysExData(data: Uint8Array) {
+		let index = 0;
+		const array: Uint8Array[] = [];
+		while (index < data.length) {
+			const newIndex = data.indexOf(0xf7, index) + 1;
+			const bytes: Uint8Array = data.slice(index, newIndex);
+			array.push(bytes);
+			index = newIndex;
 		}
-		const byteArray = new Uint8Array(binary);
-		const blob = new Blob([byteArray], { type: 'application/octet-stream' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.download = 'data.syx';
-		a.href = url;
-		a.click();
-		window.URL.revokeObjectURL(url);
-	}
-
-	function onKeyDown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			console.log('lala');
-		}
+		return array;
 	}
 
 	const scrollToBottom = (node: HTMLDivElement) => {
@@ -219,50 +211,41 @@
 				</select></label
 			>
 		</form>
-		<!-- <button onclick={downloadMessage} id="download">Download last message</button> -->
 	</div>
-	<!-- <div class="win"> -->
-	<textarea
-		class="resize-none overflow-auto whitespace-nowrap"
-		id="t"
-		bind:value={textarea}
-		onkeydown={onKeyDown}
-	>
-	</textarea>
-	<!-- </div> -->
-	<div class="win overflow-auto border text-wrap" id="in" bind:this={element}>
-		<table class="w-full border-collapse" id="table">
-			<thead class="sticky top-0">
-				<tr class="border-t-0">
-					<th class="border border-t-0 border-l-0" style="width: 15%;">Timestamp</th>
-					<th class="border border-t-0" style="width: 20%;">Manufacturer</th>
-					<th class="border border-t-0" style="width: 10%;">Device</th>
-					<th class="border border-t-0" style="width: 30%;">Message</th>
-					<th class="border border-t-0 border-r-0" style="width: 25%;">Raw</th>
+	<div class="overflow-auto border">
+		<table class="w-full border-collapse">
+			<thead>
+				<tr class="border-b">
+					<th class="w-[18%] border-r">Manufacturer</th>
+					<th class="w-[18%] border-r border-l">Model ID</th>
+					<th class="w-[18%] border-r border-l">Length</th>
+					<th class="border-l">Preview</th>
 				</tr>
 			</thead>
 			<tbody bind:this={tbody}>
-				{#each messages as msg (msg.id)}
-					<tr class="last:border-b-0">
-						<td class="border border-l-0">{msg.timestamp}</td>
-						<td class="border">{msg.manufacturer}</td>
-						<td class="border">{msg.device}</td>
-						<td class="border">{msg.message}</td>
-						<td class="border border-r-0 p-2"
-							><div class="flex justify-between">
-								{msg.raw}<button
-									class="cursor-grab border"
-									onclick={() => {
-										downloadMessage(msg.data);
-									}}>dl</button
-								>
-							</div></td
-						>
-					</tr>
+				{#each outgoingMessages as msg (msg.id)}
+					<MessageRow message={msg} />
 				{/each}
 			</tbody>
 		</table>
 	</div>
-	<button onclick={sendInput}>Send</button>
+	<div class="win overflow-auto border text-wrap" id="in" bind:this={element}>
+		<table class="w-full border-collapse" id="table">
+			<thead class="sticky top-0">
+				<tr class="border-t-0">
+					<th class="w-[18%] border border-t-0 border-l-0">Manufacturer</th>
+					<th class="w-[18%] border border-t-0">Model ID</th>
+					<th class="w-[18%] border border-t-0">Length</th>
+					<th class="border border-t-0 border-r-0">Preview</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each messages as msg (msg.id)}
+					<MessageRow message={msg} />
+				{/each}
+			</tbody>
+		</table>
+	</div>
+	<button onclick={sendSysEx}>Send</button>
 	<button onclick={() => (messages = [])}>Clear</button>
 </div>

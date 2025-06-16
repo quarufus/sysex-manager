@@ -1,11 +1,10 @@
 export interface Message {
 	id: number;
-	timestamp: number;
+	manufacturerId: string;
 	manufacturer: string;
-	device: string;
-	message: string;
-	raw: string;
-	data: Uint8Array;
+	modelId: string;
+	data: string;
+	raw: Uint8Array;
 }
 
 export interface Filters {

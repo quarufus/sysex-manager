@@ -38,3 +38,18 @@ export function messageStatus(message: MIDIMessageEvent): string {
 			return '';
 	}
 }
+
+export function downloadMessage(msg: Uint8Array) {
+	const binary = [];
+	for (let i = 0; i < msg.length; i++) {
+		binary[i] = parseInt(msg[i].toString(16), 16);
+	}
+	const byteArray = new Uint8Array(binary);
+	const blob = new Blob([byteArray], { type: 'application/octet-stream' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.download = 'data.syx';
+	a.href = url;
+	a.click();
+	window.URL.revokeObjectURL(url);
+}
