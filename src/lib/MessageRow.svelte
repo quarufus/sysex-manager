@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Message } from '$lib';
-	const { message }: Message = $props();
+	const { message }: { message: Message } = $props();
 	import { downloadMessage } from '$lib';
 
-	let dialog;
+	let dialog!: HTMLDialogElement;
 
 	let preview = $state('');
 	message.data
@@ -19,10 +19,16 @@
 	<td class="border-r">{message.manufacturer}</td>
 	<td class="border-r border-l">{message.modelId.join(' ')}</td>
 	<td class="border-r border-l">{message.raw.length}</td>
-	<td class="border-l"><button onclick={() => dialog.showModal()}>{preview}</button></td>
+	<td class="border-l"
+		><button
+			onclick={() => {
+				dialog.showModal();
+			}}>{preview}</button
+		></td
+	>
 </tr>
 
 <dialog bind:this={dialog} class="mt-[10%] ml-[25%] h-1/2 w-1/2 text-wrap">
-	<button onclick={downloadMessage}>Download</button>
+	<button onclick={() => downloadMessage}>Download</button>
 	{message.data.join(' ')}
 </dialog>

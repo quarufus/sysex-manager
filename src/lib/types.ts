@@ -1,9 +1,9 @@
 export interface Message {
 	id: number;
-	manufacturerId: string;
+	manufacturerId: string[];
 	manufacturer: string;
-	modelId: string;
-	data: string;
+	modelId: string[];
+	data: string[];
 	raw: Uint8Array;
 }
 
