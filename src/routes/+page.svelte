@@ -3,6 +3,7 @@
 	import type { Filters, Message } from '$lib';
 	import { getManufacturer } from '$lib';
 	import { MessageRow } from '$lib';
+	import { Button } from '$lib';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -82,12 +83,11 @@
 
 		const device = midiInputs.find((d) => d.id == selectedInput);
 		if (!device?.manufacturer || !device.name) {
-			return;
+			// return;
 		}
 		const lines = msg.data[0] == 240 ? splitSysExData(msg.data) : [msg.data];
 		lines.forEach((l) => {
 			const s = Array.from(l).map((v) => v.toString(16).toUpperCase().padStart(2, '0'));
-			console.log(s.slice(1, 4).join(' '));
 			messages.push({
 				id: idx,
 				manufacturerId: s.slice(1, 4),
@@ -198,7 +198,14 @@
 				{/each}
 			</select>
 		</form>
-		<input bind:files onchange={loadFile} type="file" id="file_input" />
+		<!-- <label class="inline-block cursor-pointer" for="file_input">Open File</label> -->
+		<input
+			class="cursor-pointer hover:bg-yellow-300"
+			bind:files
+			onchange={loadFile}
+			type="file"
+			id="file_input"
+		/>
 	</div>
 	<div class="flex justify-between">
 		<form>
@@ -214,11 +221,11 @@
 	</div>
 	<div class="overflow-auto border">
 		<table class="w-full border-collapse">
-			<thead>
-				<tr class="border-b">
-					<th class="w-[18%] border-r">Manufacturer</th>
-					<th class="w-[18%] border-r border-l">Model ID</th>
-					<th class="w-[18%] border-r border-l">Length</th>
+			<thead class="sticky top-0 bg-[#f9f4f9] shadow-[inset_0_-1px_0_black]">
+				<tr class="">
+					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Manufacturer</th>
+					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Model ID</th>
+					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Length</th>
 					<th class="border-l">Preview</th>
 				</tr>
 			</thead>
@@ -231,12 +238,12 @@
 	</div>
 	<div class="win overflow-auto border text-wrap" id="in" bind:this={element}>
 		<table class="w-full border-collapse" id="table">
-			<thead class="sticky top-0">
+			<thead class="sticky top-0 bg-[#f9f4f9] shadow-[inset_0_-1px_0_black]">
 				<tr class="border-t-0">
-					<th class="w-[18%] border border-t-0 border-l-0">Manufacturer</th>
-					<th class="w-[18%] border border-t-0">Model ID</th>
-					<th class="w-[18%] border border-t-0">Length</th>
-					<th class="border border-t-0 border-r-0">Preview</th>
+					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Manufacturer</th>
+					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Model ID</th>
+					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Length</th>
+					<th class="border-l">Preview</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -246,6 +253,16 @@
 			</tbody>
 		</table>
 	</div>
-	<button onclick={sendSysEx}>Send</button>
-	<button onclick={() => (messages = [])}>Clear</button>
+	<Button
+		text="Send"
+		callback={() => {
+			sendSysEx();
+		}}
+	/>
+	<Button
+		text="Clear"
+		callback={() => {
+			messages = [];
+		}}
+	/>
 </div>
