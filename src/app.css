@@ -5,3 +5,11 @@
 body {
 	background-color: #f9f4f9;
 }
+
+button {
+	cursor: pointer;
+}
+
+button:hover {
+	background-color: #ffdf20;
+}

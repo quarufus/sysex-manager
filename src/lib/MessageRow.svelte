@@ -2,51 +2,50 @@
 	import type { Message } from '$lib';
 	const { message }: { message: Message } = $props();
 	import { downloadMessage } from '$lib';
-	import { Button } from '$lib';
 
 	let dialog!: HTMLDialogElement;
 
-	let preview = $state('');
-	message.data
-		.slice(6, 20)
-		.forEach((v: string) => (preview += String.fromCharCode(parseInt(v, 16))));
-	preview += '...';
-	message.data
-		.slice(-14, -1)
-		.forEach((v: string) => (preview += String.fromCharCode(parseInt(v, 16))));
+	const parsed = message.data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
+	const preview = `${parsed.slice(6, 20)} ... ${parsed.slice(-14, -1)}`;
 </script>
 
 <tr class="border border-r-0 border-l-0 first:border-t-0 last:border-b-0">
 	<td class="border-r">{message.manufacturer}</td>
 	<td class="border-r border-l">{message.modelId.join(' ')}</td>
 	<td class="border-r border-l">{message.raw.length}</td>
-	<td class="border-l hover:bg-yellow-300"
-		><Button
-			callback={() => {
+	<td class="border-l hover:bg-yellow-300">
+		<button
+			onclick={() => {
 				dialog.showModal();
-			}}
-			text={preview}
-		/></td
-	>
+			}}>{preview}</button
+		>
+	</td>
 </tr>
 
-<dialog bind:this={dialog} class="mt-[10%] ml-[25%] h-1/2 w-1/2 px-4 pb-4 text-wrap" closedby="any">
+<dialog
+	bind:this={dialog}
+	class="mt-[5%] ml-[10%] h-[80%] w-[80%] px-4 pb-4 text-wrap"
+	closedby="any"
+>
 	<div class="sticky top-0 border-b-2 bg-white pt-4">
 		<div class="flex justify-between">
-			<Button
-				text="Download"
-				callback={() => {
+			<button
+				onclick={() => {
 					downloadMessage(message.raw);
-				}}
-			/>
-			<Button
-				text="Close"
-				callback={() => {
+				}}>Download</button
+			>
+			<button
+				onclick={() => {
 					dialog.close();
-				}}
-			/>
+				}}>Close</button
+			>
 		</div>
 	</div>
 	<br />
-	<div class="font-mono">{message.data.join(' ')}</div>
+	<div class="grid grid-cols-2">
+		<div class="border-r pr-1 font-mono">{message.data.join(' ')}</div>
+		<div class="pl-4 font-mono wrap-anywhere">
+			<pre>{JSON.stringify(JSON.parse(parsed.slice(6, -1)), null, '\t')}</pre>
+		</div>
+	</div>
 </dialog>

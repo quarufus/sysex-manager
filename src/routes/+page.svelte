@@ -3,7 +3,6 @@
 	import type { Filters, Message } from '$lib';
 	import { getManufacturer } from '$lib';
 	import { MessageRow } from '$lib';
-	import { Button } from '$lib';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -190,7 +189,7 @@
 		<label for="pause">Pause between messages</label>
 	</div>
 	<div class="flex justify-between">
-		<form>
+		<form class="w-full">
 			<label for="device_out" id="device_out">MIDI out device</label>
 			<select class="w-2/3" bind:value={selectedOutput} name="device_out" id="select_out">
 				{#each midiOutputs as device (device.id)}
@@ -200,7 +199,7 @@
 		</form>
 		<!-- <label class="inline-block cursor-pointer" for="file_input">Open File</label> -->
 		<input
-			class="cursor-pointer hover:bg-yellow-300"
+			class="inline-block h-min cursor-pointer p-2 hover:bg-yellow-300"
 			bind:files
 			onchange={loadFile}
 			type="file"
@@ -253,16 +252,14 @@
 			</tbody>
 		</table>
 	</div>
-	<Button
-		text="Send"
-		callback={() => {
+	<button
+		onclick={() => {
 			sendSysEx();
-		}}
-	/>
-	<Button
-		text="Clear"
-		callback={() => {
+		}}>Send</button
+	>
+	<button
+		onclick={() => {
 			messages = [];
-		}}
-	/>
+		}}>Clear</button
+	>
 </div>
