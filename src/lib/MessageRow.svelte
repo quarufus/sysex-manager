@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Message } from '$lib';
-	const { message }: { message: Message } = $props();
+	const { message, position }: { message: Message; position: number } = $props();
 	import { downloadMessage } from '$lib';
 
 	let dialog!: HTMLDialogElement;
@@ -10,11 +10,13 @@
 </script>
 
 <tr class="border border-r-0 border-l-0 first:border-t-0 last:border-b-0">
-	<td class="border-r">{message.manufacturer}</td>
-	<td class="border-r border-l">{message.modelId.join(' ')}</td>
-	<td class="border-r border-l">{message.raw.length}</td>
+	<td class="border-r px-1">{position}</td>
+	<td class="border-r border-l px-1">{message.manufacturer}</td>
+	<td class="border-r border-l px-1">{message.modelId.join(' ')}</td>
+	<td class="border-r border-l px-1">{message.raw.length}</td>
 	<td class="border-l hover:bg-yellow-300">
 		<button
+			class=" px-1"
 			onclick={() => {
 				dialog.showModal();
 			}}>{preview}</button
@@ -45,7 +47,8 @@
 	<div class="grid grid-cols-2">
 		<div class="border-r pr-1 font-mono">{message.data.join(' ')}</div>
 		<div class="pl-4 font-mono wrap-anywhere">
-			<pre>{JSON.stringify(JSON.parse(parsed.slice(6, -1)), null, '\t')}</pre>
+			<!-- <pre>{JSON.stringify(JSON.parse(parsed.slice(6, -1)), null, '\t')}</pre> -->
+			<pre>{parsed}</pre>
 		</div>
 	</div>
 </dialog>

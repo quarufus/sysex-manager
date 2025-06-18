@@ -24,9 +24,11 @@
 	});
 
 	let pause: number = $state(0);
+	let custom_cmd: string = $state('');
 	let files: FileList | null = $state(null);
 	let element!: HTMLDivElement;
-	let tbody!: HTMLTableSectionElement;
+	let dialog!: HTMLDialogElement;
+	let custom!: HTMLDialogElement;
 
 	onMount(() => {
 		navigator
@@ -101,17 +103,31 @@
 	}
 
 	function sendSysEx() {
-		let i = 0;
+		// let i = 0;
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
-		const interval = setInterval(function () {
+		// const interval = setInterval(() => {
+		// 	console.log(device);
+		// 	if (device) {
+		// 		device.send(outgoingMessages[i].raw);
+		// 	}
+		// 	i++;
+		// 	if (i == outgoingMessages.length) {
+		// 		clearInterval(interval);
+		// 	}
+		// }, pause);
+		const now = performance.now();
+		for (let i = 1; i < outgoingMessages.length + 1; i++) {
+			const timestamp = now + i * pause;
+			// console.log(outgoingMessages[i]);
 			if (device) {
-				device.send(outgoingMessages[i].raw);
+				console.log(timestamp);
+				if (pause == 0) {
+					device.send(outgoingMessages[i - 1].raw);
+				} else {
+					device.send(outgoingMessages[i - 1].raw, timestamp);
+				}
 			}
-			i++;
-			if (i == outgoingMessages.length) {
-				clearInterval(interval);
-			}
-		}, pause / 10);
+		}
 	}
 
 	function onInputChange() {
@@ -158,15 +174,37 @@
 		return array;
 	}
 
+	function parseMessage(raw: Uint8Array): Message {
+		const message = Array.from(raw).map((v) => v.toString(16).padStart(2, '0'));
+		idx++;
+		return {
+			id: idx + 1000,
+			manufacturerId: message.slice(1, 4),
+			manufacturer: getManufacturer(message.slice(1, 4)),
+			modelId: message.slice(4, 6),
+			data: message,
+			raw: raw
+		};
+	}
+
 	const scrollToBottom = (node: HTMLDivElement) => {
-		node.scrollTop = node.scrollHeight;
+		if (node.scrollHeight) {
+			node.scrollTop = node.scrollHeight;
+		}
 	};
 </script>
 
-<h1 class="m-4 text-2xl">Sysex Manager</h1>
-<div
-	class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_min-content_auto_min-content] gap-2.5"
->
+<div class="flex items-center justify-between p-4">
+	<h1 class="text-2xl">Sysex Manager</h1>
+	<button
+		class="h-min"
+		onclick={() => {
+			dialog.showModal();
+		}}>Prefferences</button
+	>
+</div>
+<div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto_min-content] gap-2.5">
+	<!--
 	<div></div>
 	<div>
 		<input type="checkbox" id="clock" name="clock" bind:checked={filters.clock} />
@@ -188,7 +226,8 @@
 		<input type="range" name="pause" min="0" max="1000" bind:value={pause} />
 		<label for="pause">Pause between messages</label>
 	</div>
-	<div class="flex justify-between">
+	-->
+	<div class="flex items-center justify-between">
 		<form class="w-full">
 			<label for="device_out" id="device_out">MIDI out device</label>
 			<select class="w-2/3" bind:value={selectedOutput} name="device_out" id="select_out">
@@ -199,7 +238,7 @@
 		</form>
 		<!-- <label class="inline-block cursor-pointer" for="file_input">Open File</label> -->
 		<input
-			class="inline-block h-min cursor-pointer p-2 hover:bg-yellow-300"
+			class="inline-block h-min w-[197px] cursor-pointer hover:bg-yellow-300"
 			bind:files
 			onchange={loadFile}
 			type="file"
@@ -222,15 +261,16 @@
 		<table class="w-full border-collapse">
 			<thead class="sticky top-0 bg-[#f9f4f9] shadow-[inset_0_-1px_0_black]">
 				<tr class="">
-					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Manufacturer</th>
+					<th class="w-[4%] border-r shadow-[1px_0_0_black]">#</th>
+					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Manufacturer</th>
 					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Model ID</th>
 					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Length</th>
 					<th class="border-l">Preview</th>
 				</tr>
 			</thead>
-			<tbody bind:this={tbody}>
-				{#each outgoingMessages as msg (msg.id)}
-					<MessageRow message={msg} />
+			<tbody>
+				{#each outgoingMessages as msg, i (msg.id)}
+					<MessageRow message={msg} position={i} />
 				{/each}
 			</tbody>
 		</table>
@@ -239,6 +279,7 @@
 		<table class="w-full border-collapse" id="table">
 			<thead class="sticky top-0 bg-[#f9f4f9] shadow-[inset_0_-1px_0_black]">
 				<tr class="border-t-0">
+					<th class="w-[4%] border-r shadow-[1px_0_0_black]">#</th>
 					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Manufacturer</th>
 					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Model ID</th>
 					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Length</th>
@@ -246,20 +287,71 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each messages as msg (msg.id)}
-					<MessageRow message={msg} />
+				{#each messages as msg, i (msg.id)}
+					<MessageRow message={msg} position={i} />
 				{/each}
 			</tbody>
 		</table>
 	</div>
-	<button
-		onclick={() => {
-			sendSysEx();
-		}}>Send</button
-	>
+	<div>
+		<button
+			onclick={() => {
+				custom.showModal();
+			}}>Custom</button
+		>
+		<button
+			onclick={() => {
+				sendSysEx();
+			}}>Send</button
+		>
+	</div>
 	<button
 		onclick={() => {
 			messages = [];
 		}}>Clear</button
 	>
 </div>
+
+<dialog bind:this={dialog} class="mx-auto mt-16 w-1/3 px-4 pb-4">
+	<div class="sticky top-0 border-b-2 bg-white pt-4">
+		<div class="flex justify-end">
+			<button
+				onclick={() => {
+					dialog.close();
+				}}>Close</button
+			>
+		</div>
+	</div>
+	<br />
+	<div class="flex justify-between">
+		<label for="pause">Pause between messages</label>
+		<div><input class="border-0 text-right" type="number" bind:value={pause} />ms</div>
+	</div>
+	<div class="flex justify-between">
+		<p>0</p>
+		<input type="range" name="pause" min="0" max="5000" bind:value={pause} />
+		<p>5000</p>
+	</div>
+</dialog>
+
+<dialog bind:this={custom} class="mx-auto mt-16 w-1/3 px-4 pb-4">
+	<div class="sticky top-0 border-b-2 bg-white pt-4">
+		<div class="flex justify-end">
+			<button
+				onclick={() => {
+					custom.close();
+				}}>Close</button
+			>
+		</div>
+	</div>
+	<input type="text" bind:value={custom_cmd} />
+	<button
+		onclick={() => {
+			custom.close();
+			outgoingMessages.push(
+				parseMessage(Uint8Array.from(custom_cmd.split(' ').map((v) => parseInt(v, 16))))
+			);
+			console.log(outgoingMessages);
+		}}>Ok</button
+	>
+</dialog>
