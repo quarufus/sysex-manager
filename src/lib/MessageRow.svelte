@@ -6,21 +6,28 @@
 	let dialog!: HTMLDialogElement;
 
 	const parsed = message.data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-	const preview = `${parsed.slice(6, 20)} ... ${parsed.slice(-14, -1)}`;
+	const command = parsed.slice(8, 18) == 'BankBackup' ? 'Bank Backup' : 'Preset Backup'; //`${parsed.slice(6, 20)} ... ${parsed.slice(-14, -1)}`;
+	let length = $state();
+	if (message.raw.length / 1000 > 1) {
+		length = (message.raw.length / 1000).toFixed(1).concat('k');
+	} else {
+		length = message.raw.length.toString();
+	}
 </script>
 
 <tr class="border border-r-0 border-l-0 first:border-t-0 last:border-b-0">
 	<td class="border-r px-1">{position}</td>
 	<td class="border-r border-l px-1">{message.manufacturer}</td>
 	<td class="border-r border-l px-1">{message.modelId.join(' ')}</td>
-	<td class="border-r border-l px-1">{message.raw.length}</td>
-	<td class="border-l hover:bg-yellow-300">
-		<button
-			class=" px-1"
-			onclick={() => {
-				dialog.showModal();
-			}}>{preview}</button
-		>
+	<td class="border-r border-l px-1 text-right">{length}</td>
+	<td class="border-r border-l px-1 text-center">{message.bankpreset}</td>
+	<td class="border-r border-l px-1"></td>
+	<td
+		class="cursor-pointer border-l px-1 hover:bg-yellow-300"
+		onclick={() => {
+			dialog.showModal();
+		}}
+		>{command}
 	</td>
 </tr>
 
@@ -47,8 +54,8 @@
 	<div class="grid grid-cols-2">
 		<div class="border-r pr-1 font-mono">{message.data.join(' ')}</div>
 		<div class="pl-4 font-mono wrap-anywhere">
-			<!-- <pre>{JSON.stringify(JSON.parse(parsed.slice(6, -1)), null, '\t')}</pre> -->
-			<pre>{parsed}</pre>
+			<pre>{JSON.stringify(JSON.parse(parsed.slice(6, -1)), null, '\t')}</pre>
+			<!-- <pre>{parsed}</pre> -->
 		</div>
 	</div>
 </dialog>

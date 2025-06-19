@@ -3,6 +3,7 @@ export interface Message {
 	manufacturerId: string[];
 	manufacturer: string;
 	modelId: string[];
+	bankpreset: string;
 	data: string[];
 	raw: Uint8Array;
 }

@@ -11,6 +11,7 @@
 	let messages: Message[] = $state([]);
 	let outgoingMessages: Message[] = $state([]);
 	let idx: number = $state(0);
+	const bankpresetIn = $state({ bank: '@', preset: 0 });
 
 	const filters: Filters = $state({
 		clock: false,
@@ -45,6 +46,9 @@
 		selectedInput = midiInputs[0].id;
 		selectedOutput = midiOutputs[0].id;
 		midiInputs[0].onmidimessage = handleMIDIMessage;
+		midiOutputs[0].open().catch((error: unknown) => {
+			console.error(error);
+		});
 
 		access.onstatechange = () => {
 			midiInputs = Array.from(access.inputs.values());
@@ -89,11 +93,19 @@
 		const lines = msg.data[0] == 240 ? splitSysExData(msg.data) : [msg.data];
 		lines.forEach((l) => {
 			const s = Array.from(l).map((v) => v.toString(16).toUpperCase().padStart(2, '0'));
+			const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
+			if (text.substring(8, 18) == 'BankBackup') {
+				bankpresetIn.bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
+				bankpresetIn.preset = 0;
+			} else {
+				bankpresetIn.preset++;
+			}
 			messages.push({
 				id: idx,
 				manufacturerId: s.slice(1, 4),
 				manufacturer: getManufacturer(s.slice(1, 4)),
 				modelId: s.slice(4, 6),
+				bankpreset: `${bankpresetIn.bank}${bankpresetIn.preset > 0 ? bankpresetIn.preset.toString() : ''}`,
 				data: s,
 				raw: l
 			});
@@ -103,28 +115,50 @@
 	}
 
 	function sendSysEx() {
-		// let i = 0;
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
+		if (outgoingMessages.length == 0) {
+			return;
+		}
+		// let i = 0;
 		// const interval = setInterval(() => {
-		// 	console.log(device);
 		// 	if (device) {
-		// 		device.send(outgoingMessages[i].raw);
+		// 		try {
+		// 			device.send(outgoingMessages[i].raw);
+		// 		} catch (e) {
+		// 			console.log(e);
+		// 		}
 		// 	}
 		// 	i++;
 		// 	if (i == outgoingMessages.length) {
 		// 		clearInterval(interval);
 		// 	}
 		// }, pause);
+
 		const now = performance.now();
-		for (let i = 1; i < outgoingMessages.length + 1; i++) {
+		// const cut = [];
+		// for (const message of outgoingMessages) {
+		// 	let index = 0;
+		// 	const data = message.raw.slice(1, -1);
+		// 	while (index < message.raw.length) {
+		// 		cut.push([0xf0, ...data.slice(index, index + 1022), 0xf7]);
+		// 		index += 1022;
+		// 	}
+		// }
+		// console.log(cut.length);
+		// for (let i = 0; i < cut.length; i++) {
+		// 	const timestamp = now + i * pause;
+		// 	if (device) {
+		// 		device.send(cut[i], timestamp);
+		// 	}
+		// }
+
+		for (let i = 0; i < outgoingMessages.length; i++) {
 			const timestamp = now + i * pause;
-			// console.log(outgoingMessages[i]);
 			if (device) {
-				console.log(timestamp);
 				if (pause == 0) {
-					device.send(outgoingMessages[i - 1].raw);
+					device.send(Array.from(outgoingMessages[i].raw));
 				} else {
-					device.send(outgoingMessages[i - 1].raw, timestamp);
+					device.send(outgoingMessages[i].raw, timestamp);
 				}
 			}
 		}
@@ -140,6 +174,15 @@
 		}
 	}
 
+	function onOutputChange() {
+		const device = midiOutputs.find((d) => d.id == selectedOutput);
+		if (device) {
+			device.open().catch((error: unknown) => {
+				console.error(error);
+			});
+		}
+	}
+
 	async function loadFile() {
 		if (!files) {
 			return;
@@ -148,13 +191,23 @@
 		const bytes = new Uint8Array(buffer);
 		outgoingMessages = [];
 		const lines = splitSysExData(bytes);
+		let bank = '';
+		let preset = 0;
 		lines.forEach((l) => {
 			const s = Array.from(l).map((v) => v.toString(16).padStart(2, '0'));
+			const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
+			if (text.substring(8, 18) == 'BankBackup') {
+				bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
+				preset = 0;
+			} else {
+				preset++;
+			}
 			outgoingMessages.push({
 				id: idx + 1000,
 				manufacturerId: s.slice(1, 4),
 				manufacturer: getManufacturer(s.slice(1, 4)),
 				modelId: s.slice(4, 6),
+				bankpreset: `${bank}${preset ? preset.toString() : ''}`,
 				data: s,
 				raw: l
 			});
@@ -182,6 +235,7 @@
 			manufacturerId: message.slice(1, 4),
 			manufacturer: getManufacturer(message.slice(1, 4)),
 			modelId: message.slice(4, 6),
+			bankpreset: '',
 			data: message,
 			raw: raw
 		};
@@ -230,7 +284,13 @@
 	<div class="flex items-center justify-between">
 		<form class="w-full">
 			<label for="device_out" id="device_out">MIDI out device</label>
-			<select class="w-2/3" bind:value={selectedOutput} name="device_out" id="select_out">
+			<select
+				class="w-2/3"
+				bind:value={selectedOutput}
+				onchange={onOutputChange}
+				name="device_out"
+				id="select_out"
+			>
 				{#each midiOutputs as device (device.id)}
 					<option value={device.id}>{device.name}</option>
 				{/each}
@@ -263,9 +323,11 @@
 				<tr class="">
 					<th class="w-[4%] border-r shadow-[1px_0_0_black]">#</th>
 					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Manufacturer</th>
-					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Model ID</th>
-					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Length</th>
-					<th class="border-l">Preview</th>
+					<th class="w-[10%] border-r border-l shadow-[1px_0_0_black]">Model ID</th>
+					<th class="w-[10%] border-r border-l shadow-[1px_0_0_black]">Length</th>
+					<th class="w-[5%] border-r border-l shadow-[1px_0_0_black]">B/P</th>
+					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Name</th>
+					<th class="border-l">Command</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -281,9 +343,11 @@
 				<tr class="border-t-0">
 					<th class="w-[4%] border-r shadow-[1px_0_0_black]">#</th>
 					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Manufacturer</th>
-					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Model ID</th>
-					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Length</th>
-					<th class="border-l">Preview</th>
+					<th class="w-[10%] border-r shadow-[1px_0_0_black]">Model ID</th>
+					<th class="w-[10%] border-r border-l shadow-[1px_0_0_black]">Length</th>
+					<th class="w-[5%] border-r border-l shadow-[1px_0_0_black]">B/P</th>
+					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Name</th>
+					<th class="border-l">Command</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -344,14 +408,13 @@
 			>
 		</div>
 	</div>
-	<input type="text" bind:value={custom_cmd} />
+	<input type="text" bind:value={custom_cmd} autocorrect="off" spellcheck="false" />
 	<button
 		onclick={() => {
 			custom.close();
 			outgoingMessages.push(
 				parseMessage(Uint8Array.from(custom_cmd.split(' ').map((v) => parseInt(v, 16))))
 			);
-			console.log(outgoingMessages);
 		}}>Ok</button
 	>
 </dialog>
