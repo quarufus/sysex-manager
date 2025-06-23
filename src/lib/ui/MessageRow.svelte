@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Message } from '$lib';
+	import { type Message } from '$lib';
 	const { message, position }: { message: Message; position: number } = $props();
 	import { downloadMessage } from '$lib';
 
@@ -13,37 +13,46 @@
 	} else {
 		length = message.raw.length.toString();
 	}
+	const json = () => {
+		try {
+			return JSON.stringify(JSON.parse(parsed.slice(6, -1)), null, '\t');
+		} catch {
+			return parsed;
+		}
+	};
 </script>
 
-<tr class="border border-r-0 border-l-0 first:border-t-0 last:border-b-0">
-	<td class="border-r px-1">{position}</td>
-	<td class="border-r border-l px-1">{message.manufacturer}</td>
-	<td class="border-r border-l px-1">{message.modelId.join(' ')}</td>
-	<td class="border-r border-l px-1 text-right">{length}</td>
-	<td class="border-r border-l px-1 text-center">{message.bankpreset}</td>
-	<td class="border-r border-l px-1"></td>
+<tr class="[&>*]:border-b-shade border-l-0 font-mono first:border-t-0 nth-last-2:[&>*]:border-b-0">
+	<td class="border-b px-1 pt-1 pb-0.5">{position}</td>
+	<td class="border-b px-1 pt-1 pb-0.5">{message.manufacturer}</td>
+	<td class="border-b px-1 pt-1 pb-0.5">{message.modelId.join(' ')}</td>
+	<td class="border-b px-1 pt-1 pb-0.5">{message.bankpreset}</td>
+	<td class="border-b px-1 pt-1 pb-0.5"></td>
 	<td
-		class="cursor-pointer border-l px-1 hover:bg-yellow-300"
+		class="hover:bg-text hover:text-background cursor-pointer border-b px-1 pt-0.5"
 		onclick={() => {
 			dialog.showModal();
 		}}
 		>{command}
 	</td>
+	<td class="border-b px-1 pt-0.5 text-right">{length}</td>
 </tr>
 
 <dialog
 	bind:this={dialog}
-	class="mt-[5%] ml-[10%] h-[80%] w-[80%] px-4 pb-4 text-wrap"
+	class="bg-background text-text mt-[5%] ml-[10%] h-[80%] w-[80%] rounded-sm border px-4 pb-4 text-wrap"
 	closedby="any"
 >
-	<div class="sticky top-0 border-b-2 bg-white pt-4">
+	<div class="bg-background sticky top-0 border-b-2 pt-4">
 		<div class="flex justify-between">
 			<button
+				class="hover:bg-text hover:text-background"
 				onclick={() => {
 					downloadMessage(message.raw);
 				}}>Download</button
 			>
 			<button
+				class="hover:bg-text hover:text-background"
 				onclick={() => {
 					dialog.close();
 				}}>Close</button
@@ -54,7 +63,7 @@
 	<div class="grid grid-cols-2">
 		<div class="border-r pr-1 font-mono">{message.data.join(' ')}</div>
 		<div class="pl-4 font-mono wrap-anywhere">
-			<pre>{JSON.stringify(JSON.parse(parsed.slice(6, -1)), null, '\t')}</pre>
+			<pre>{json()}</pre>
 			<!-- <pre>{parsed}</pre> -->
 		</div>
 	</div>

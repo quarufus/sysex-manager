@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Filters, Message } from '$lib';
-	import { getManufacturer } from '$lib';
-	import { MessageRow } from '$lib';
+	import { getManufacturer, toggleThemeValues } from '$lib';
+	import { MessageRow, Select, Settings, Circle, Dialog } from '$lib';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -11,7 +11,9 @@
 	let messages: Message[] = $state([]);
 	let outgoingMessages: Message[] = $state([]);
 	let idx: number = $state(0);
-	const bankpresetIn = $state({ bank: '@', preset: 0 });
+	const bankpresetIn = $state({ bank: '', preset: 0 });
+	let filename = $state('');
+	let dark: boolean = $state(false);
 
 	const filters: Filters = $state({
 		clock: false,
@@ -32,6 +34,13 @@
 	let custom!: HTMLDialogElement;
 
 	onMount(() => {
+		if (
+			localStorage.theme ||
+			(!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+		) {
+			dark = true;
+		}
+
 		navigator
 			.requestMIDIAccess({ sysex: true })
 			.then(handleMIDI)
@@ -43,8 +52,6 @@
 	function handleMIDI(access: MIDIAccess) {
 		midiInputs = Array.from(access.inputs.values());
 		midiOutputs = Array.from(access.outputs.values());
-		selectedInput = midiInputs[0].id;
-		selectedOutput = midiOutputs[0].id;
 		midiInputs[0].onmidimessage = handleMIDIMessage;
 		midiOutputs[0].open().catch((error: unknown) => {
 			console.error(error);
@@ -119,38 +126,8 @@
 		if (outgoingMessages.length == 0) {
 			return;
 		}
-		// let i = 0;
-		// const interval = setInterval(() => {
-		// 	if (device) {
-		// 		try {
-		// 			device.send(outgoingMessages[i].raw);
-		// 		} catch (e) {
-		// 			console.log(e);
-		// 		}
-		// 	}
-		// 	i++;
-		// 	if (i == outgoingMessages.length) {
-		// 		clearInterval(interval);
-		// 	}
-		// }, pause);
 
 		const now = performance.now();
-		// const cut = [];
-		// for (const message of outgoingMessages) {
-		// 	let index = 0;
-		// 	const data = message.raw.slice(1, -1);
-		// 	while (index < message.raw.length) {
-		// 		cut.push([0xf0, ...data.slice(index, index + 1022), 0xf7]);
-		// 		index += 1022;
-		// 	}
-		// }
-		// console.log(cut.length);
-		// for (let i = 0; i < cut.length; i++) {
-		// 	const timestamp = now + i * pause;
-		// 	if (device) {
-		// 		device.send(cut[i], timestamp);
-		// 	}
-		// }
 
 		for (let i = 0; i < outgoingMessages.length; i++) {
 			const timestamp = now + i * pause;
@@ -187,6 +164,7 @@
 		if (!files) {
 			return;
 		}
+		filename = files[0].name;
 		const buffer = await files[0].arrayBuffer();
 		const bytes = new Uint8Array(buffer);
 		outgoingMessages = [];
@@ -241,6 +219,13 @@
 		};
 	}
 
+	function changeTheme() {
+		dark = !dark;
+		document.documentElement.classList.toggle('dark', dark);
+		localStorage.theme = dark ? 'dark' : '';
+		toggleThemeValues(dark);
+	}
+
 	const scrollToBottom = (node: HTMLDivElement) => {
 		if (node.scrollHeight) {
 			node.scrollTop = node.scrollHeight;
@@ -250,14 +235,23 @@
 
 <div class="flex items-center justify-between p-4">
 	<h1 class="text-2xl">Sysex Manager</h1>
-	<button
-		class="h-min"
-		onclick={() => {
-			dialog.showModal();
-		}}>Prefferences</button
-	>
+	<div class="flex">
+		<button
+			class="h-min"
+			onclick={() => {
+				dialog.showModal();
+			}}><Settings class="hover:fill-background" /></button
+		>
+		<button
+			class="hover:bg-background"
+			onclick={() => {
+				changeTheme();
+			}}
+			><Circle class={dark ? 'hover:fill-background' : 'fill-background hover:fill-text'} /></button
+		>
+	</div>
 </div>
-<div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto_min-content] gap-2.5">
+<div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto_min-content] gap-4">
 	<!--
 	<div></div>
 	<div>
@@ -282,52 +276,46 @@
 	</div>
 	-->
 	<div class="flex items-center justify-between">
-		<form class="w-full">
-			<label for="device_out" id="device_out">MIDI out device</label>
-			<select
-				class="w-2/3"
-				bind:value={selectedOutput}
-				onchange={onOutputChange}
-				name="device_out"
-				id="select_out"
-			>
-				{#each midiOutputs as device (device.id)}
-					<option value={device.id}>{device.name}</option>
-				{/each}
-			</select>
-		</form>
-		<!-- <label class="inline-block cursor-pointer" for="file_input">Open File</label> -->
+		<Select
+			onValueChange={onOutputChange}
+			items={midiOutputs.map((d) => ({ value: d.id, label: d.name ?? '' }))}
+			bind:value={selectedOutput}
+			type="single"
+			placeholder="Choose MIDI out device"
+		/>
 		<input
-			class="inline-block h-min w-[197px] cursor-pointer hover:bg-yellow-300"
+			class="h-min w-[197px] cursor-pointer hover:bg-yellow-300"
 			bind:files
 			onchange={loadFile}
 			type="file"
 			id="file_input"
+			hidden
 		/>
+		<div class="flex items-baseline">
+			<label id="file" for="file_input">Choose File</label>
+			<p>{filename}</p>
+		</div>
 	</div>
 	<div class="flex justify-between">
-		<form>
-			<label for="device" id="device"
-				>MIDI in device
-				<select bind:value={selectedInput} onchange={onInputChange} name="device" id="select">
-					{#each midiInputs as device (device.id)}
-						<option value={device.id}>{device.name}</option>
-					{/each}
-				</select></label
-			>
-		</form>
+		<Select
+			onValueChange={onInputChange}
+			items={midiInputs.map((d) => ({ value: d.id, label: d.name ?? '' }))}
+			bind:value={selectedInput}
+			type="single"
+			placeholder="Choose MIDI in device"
+		/>
 	</div>
-	<div class="overflow-auto border">
-		<table class="w-full border-collapse">
-			<thead class="sticky top-0 bg-[#f9f4f9] shadow-[inset_0_-1px_0_black]">
-				<tr class="">
-					<th class="w-[4%] border-r shadow-[1px_0_0_black]">#</th>
-					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Manufacturer</th>
-					<th class="w-[10%] border-r border-l shadow-[1px_0_0_black]">Model ID</th>
-					<th class="w-[10%] border-r border-l shadow-[1px_0_0_black]">Length</th>
-					<th class="w-[5%] border-r border-l shadow-[1px_0_0_black]">B/P</th>
-					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Name</th>
-					<th class="border-l">Command</th>
+	<div class="border-shade view overflow-auto rounded-sm border">
+		<table class="w-full border-separate border-spacing-0">
+			<thead class="bg-background sticky top-0 shadow-[inset_0_-1px_0_var(--shade)]">
+				<tr class="[&>*]:border-shade">
+					<th class="w-[5%] border-r">#</th>
+					<th class="w-[18%] border-r">Manufacturer</th>
+					<th class="w-[10%] border-r">Model ID</th>
+					<th class="w-[5%] border-r">B/P</th>
+					<th class="w-[18%] border-r">Name</th>
+					<th class="border-r">Command</th>
+					<th class="w-[10%]">Length</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -337,17 +325,21 @@
 			</tbody>
 		</table>
 	</div>
-	<div class="win overflow-auto border text-wrap" id="in" bind:this={element}>
-		<table class="w-full border-collapse" id="table">
-			<thead class="sticky top-0 bg-[#f9f4f9] shadow-[inset_0_-1px_0_black]">
-				<tr class="border-t-0">
-					<th class="w-[4%] border-r shadow-[1px_0_0_black]">#</th>
-					<th class="w-[18%] border-r shadow-[1px_0_0_black]">Manufacturer</th>
-					<th class="w-[10%] border-r shadow-[1px_0_0_black]">Model ID</th>
-					<th class="w-[10%] border-r border-l shadow-[1px_0_0_black]">Length</th>
-					<th class="w-[5%] border-r border-l shadow-[1px_0_0_black]">B/P</th>
-					<th class="w-[18%] border-r border-l shadow-[1px_0_0_black]">Name</th>
-					<th class="border-l">Command</th>
+	<div
+		class="win border-shade view overflow-auto rounded-sm border text-wrap"
+		id="in"
+		bind:this={element}
+	>
+		<table class="w-full border-separate border-spacing-0" id="table">
+			<thead class="bg-background sticky top-0 shadow-[inset_0_-1px_0_var(--shade)]">
+				<tr class="[&>*]:border-shade border-t-0">
+					<th class="w-[5%] border-r">#</th>
+					<th class="w-[18%] border-r">Manufacturer</th>
+					<th class="w-[10%] border-r">Model ID</th>
+					<th class="w-[5%] border-r">B/P</th>
+					<th class="w-[18%] border-r">Length</th>
+					<th class="border-r">Command</th>
+					<th class="w-[10%]">Length</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -359,62 +351,58 @@
 	</div>
 	<div>
 		<button
+			class="hover:bg-text hover:text-background"
 			onclick={() => {
 				custom.showModal();
 			}}>Custom</button
 		>
 		<button
+			class="hover:bg-text hover:text-background"
 			onclick={() => {
 				sendSysEx();
 			}}>Send</button
 		>
 	</div>
 	<button
+		class="hover:bg-text hover:text-background"
 		onclick={() => {
 			messages = [];
 		}}>Clear</button
 	>
 </div>
 
-<dialog bind:this={dialog} class="mx-auto mt-16 w-1/3 px-4 pb-4">
-	<div class="sticky top-0 border-b-2 bg-white pt-4">
-		<div class="flex justify-end">
-			<button
-				onclick={() => {
-					dialog.close();
-				}}>Close</button
-			>
+<Dialog bind:dialog
+	>{#snippet content()}
+		<div class="flex justify-between">
+			<label for="pause">Pause between messages</label>
+			<div>
+				<input class="bg-shade border-0 text-right" type="number" bind:value={pause} />ms
+			</div>
 		</div>
-	</div>
-	<br />
-	<div class="flex justify-between">
-		<label for="pause">Pause between messages</label>
-		<div><input class="border-0 text-right" type="number" bind:value={pause} />ms</div>
-	</div>
-	<div class="flex justify-between">
-		<p>0</p>
-		<input type="range" name="pause" min="0" max="5000" bind:value={pause} />
-		<p>5000</p>
-	</div>
-</dialog>
+		<div class="flex justify-between">
+			<p>0</p>
+			<input type="range" name="pause" min="0" max="5000" bind:value={pause} />
+			<p>5000</p>
+		</div>
+	{/snippet}</Dialog
+>
 
-<dialog bind:this={custom} class="mx-auto mt-16 w-1/3 px-4 pb-4">
-	<div class="sticky top-0 border-b-2 bg-white pt-4">
-		<div class="flex justify-end">
-			<button
-				onclick={() => {
-					custom.close();
-				}}>Close</button
-			>
-		</div>
-	</div>
-	<input type="text" bind:value={custom_cmd} autocorrect="off" spellcheck="false" />
-	<button
-		onclick={() => {
-			custom.close();
-			outgoingMessages.push(
-				parseMessage(Uint8Array.from(custom_cmd.split(' ').map((v) => parseInt(v, 16))))
-			);
-		}}>Ok</button
-	>
-</dialog>
+<Dialog bind:dialog={custom}>
+	{#snippet content()}
+		<input
+			class="bg-shade"
+			type="text"
+			bind:value={custom_cmd}
+			autocorrect="off"
+			spellcheck="false"
+		/>
+		<button
+			onclick={() => {
+				custom.close();
+				outgoingMessages.push(
+					parseMessage(Uint8Array.from(custom_cmd.split(' ').map((v) => parseInt(v, 16))))
+				);
+			}}>Ok</button
+		>
+	{/snippet}
+</Dialog>
