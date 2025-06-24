@@ -57,7 +57,8 @@ export function downloadMessage(msg: Uint8Array) {
 export function toggleThemeValues(dark: boolean) {
 	const style = document.documentElement.style;
 	if (dark) {
-		style.setProperty('--bg', 'oklch(0.2157 0.0075 99.62)');
+		// style.setProperty('--bg', 'oklch(0.2157 0.0075 99.62)');
+		style.setProperty('--bg', 'oklch(0.1 0 0)');
 		style.setProperty('--fg', 'oklch(0.8546 0.0176 99.62)');
 		style.setProperty('--shade', 'oklch(0.3086 0.0176 99.62)');
 	} else {

@@ -6,7 +6,7 @@ export function getManufacturer(id: ManufacturerId): string {
 	if (id.length === 1) {
 		key = id[0].toString();
 	} else if (id.length === 3) {
-		key = id.join(',');
+		key = id.join(',').toUpperCase();
 	} else {
 		return 'Invalid MIDI ID format';
 	}

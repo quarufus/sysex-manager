@@ -52,10 +52,6 @@
 	function handleMIDI(access: MIDIAccess) {
 		midiInputs = Array.from(access.inputs.values());
 		midiOutputs = Array.from(access.outputs.values());
-		midiInputs[0].onmidimessage = handleMIDIMessage;
-		midiOutputs[0].open().catch((error: unknown) => {
-			console.error(error);
-		});
 
 		access.onstatechange = () => {
 			midiInputs = Array.from(access.inputs.values());
@@ -107,11 +103,12 @@
 			} else {
 				bankpresetIn.preset++;
 			}
+			const end = s[1] == '00' ? 4 : 2;
 			messages.push({
 				id: idx,
 				manufacturerId: s.slice(1, 4),
-				manufacturer: getManufacturer(s.slice(1, 4)),
-				modelId: s.slice(4, 6),
+				manufacturer: getManufacturer(s.slice(1, end)),
+				modelId: s.slice(end, end + 2),
 				bankpreset: `${bankpresetIn.bank}${bankpresetIn.preset > 0 ? bankpresetIn.preset.toString() : ''}`,
 				data: s,
 				raw: l
@@ -173,6 +170,7 @@
 		let preset = 0;
 		lines.forEach((l) => {
 			const s = Array.from(l).map((v) => v.toString(16).padStart(2, '0'));
+			const end = s[1] == '00' ? 4 : 2;
 			const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 			if (text.substring(8, 18) == 'BankBackup') {
 				bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
@@ -183,8 +181,8 @@
 			outgoingMessages.push({
 				id: idx + 1000,
 				manufacturerId: s.slice(1, 4),
-				manufacturer: getManufacturer(s.slice(1, 4)),
-				modelId: s.slice(4, 6),
+				manufacturer: getManufacturer(s.slice(1, end)),
+				modelId: s.slice(end, end + 2),
 				bankpreset: `${bank}${preset ? preset.toString() : ''}`,
 				data: s,
 				raw: l
@@ -208,11 +206,12 @@
 	function parseMessage(raw: Uint8Array): Message {
 		const message = Array.from(raw).map((v) => v.toString(16).padStart(2, '0'));
 		idx++;
+		const end = message[1] == '00' ? 4 : 2;
 		return {
 			id: idx + 1000,
 			manufacturerId: message.slice(1, 4),
-			manufacturer: getManufacturer(message.slice(1, 4)),
-			modelId: message.slice(4, 6),
+			manufacturer: getManufacturer(message.slice(1, end)),
+			modelId: message.slice(end, end + 2),
 			bankpreset: '',
 			data: message,
 			raw: raw
@@ -362,7 +361,7 @@
 			class="hover:bg-text hover:text-background"
 			onclick={() => {
 				custom.showModal();
-			}}>Custom Command</button
+			}}>Create Command</button
 		>
 		<button
 			class="hover:bg-text hover:text-background"
@@ -389,22 +388,18 @@
 	{/snippet}</Dialog
 >
 
-<Dialog bind:dialog={custom}>
+<Dialog
+	bind:dialog={custom}
+	actionText="Ok"
+	actionCallback={() => {
+		custom.close();
+		if (custom_cmd.length > 0)
+			outgoingMessages.push(
+				parseMessage(Uint8Array.from(custom_cmd.split(' ').map((v) => parseInt(v, 16))))
+			);
+	}}
+>
 	{#snippet content()}
-		<input
-			class="bg-shade"
-			type="text"
-			bind:value={custom_cmd}
-			autocorrect="off"
-			spellcheck="false"
-		/>
-		<button
-			onclick={() => {
-				custom.close();
-				outgoingMessages.push(
-					parseMessage(Uint8Array.from(custom_cmd.split(' ').map((v) => parseInt(v, 16))))
-				);
-			}}>Ok</button
-		>
+		<textarea class="bg-shade h-32 w-full" bind:value={custom_cmd} spellcheck="false"></textarea>
 	{/snippet}
 </Dialog>

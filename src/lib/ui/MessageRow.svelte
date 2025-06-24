@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Message } from '$lib';
+	import { Dialog, type Message } from '$lib';
 	const { message, position }: { message: Message; position: number } = $props();
 	import { downloadMessage } from '$lib';
 
@@ -38,33 +38,20 @@
 	<td class="border-b px-1 pt-0.5 text-right">{length}</td>
 </tr>
 
-<dialog
-	bind:this={dialog}
-	class="bg-background text-text mt-[5%] ml-[10%] h-[80%] w-[80%] rounded-sm border px-4 pb-4 text-wrap"
-	closedby="any"
+<Dialog
+	bind:dialog
+	actionText="Download"
+	actionCallback={() => {
+		downloadMessage(message.raw);
+	}}
+	style="width: 80%; height: 85%"
 >
-	<div class="bg-background sticky top-0 border-b-2 pt-4">
-		<div class="flex justify-between">
-			<button
-				class="hover:bg-text hover:text-background"
-				onclick={() => {
-					downloadMessage(message.raw);
-				}}>Download</button
-			>
-			<button
-				class="hover:bg-text hover:text-background"
-				onclick={() => {
-					dialog.close();
-				}}>Close</button
-			>
+	{#snippet content()}
+		<div class="grid grid-cols-2">
+			<div class="border-shade border-r pr-4 text-justify font-mono">{message.data.join(' ')}</div>
+			<div class="pl-4 font-mono wrap-anywhere">
+				<pre>{json()}</pre>
+			</div>
 		</div>
-	</div>
-	<br />
-	<div class="grid grid-cols-2">
-		<div class="border-r pr-1 font-mono">{message.data.join(' ')}</div>
-		<div class="pl-4 font-mono wrap-anywhere">
-			<pre>{json()}</pre>
-			<!-- <pre>{parsed}</pre> -->
-		</div>
-	</div>
-</dialog>
+	{/snippet}
+</Dialog>

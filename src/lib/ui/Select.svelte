@@ -26,7 +26,7 @@
 	>
 	<Select.Portal>
 		<Select.Content {...contentProps} class="w-[var(--bits-select-anchor-width)]">
-			<Select.Viewport class="bg-background top-2 rounded-sm border p-1">
+			<Select.Viewport class="border-shade bg-background top-2 rounded-sm border p-1">
 				{#each items as { value, label, disabled } (value)}
 					<Select.Item
 						class="hover:bg-text hover:text-background bg-background flex w-full cursor-pointer items-center justify-between rounded-xs px-2 py-1 {selected ==
