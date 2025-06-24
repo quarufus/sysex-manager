@@ -251,7 +251,9 @@
 		>
 	</div>
 </div>
-<div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto_min-content] gap-4">
+<br />
+<br />
+<div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto_min-content] gap-8">
 	<!--
 	<div></div>
 	<div>
@@ -292,7 +294,7 @@
 			hidden
 		/>
 		<div class="flex items-baseline">
-			<label id="file" for="file_input">Choose File</label>
+			<label id="file" for="file_input">Open File</label>
 			<p>{filename}</p>
 		</div>
 	</div>
@@ -304,18 +306,24 @@
 			type="single"
 			placeholder="Choose MIDI in device"
 		/>
+		<button
+			class="hover:bg-text hover:text-background w-min"
+			onclick={() => {
+				messages = [];
+			}}>Clear</button
+		>
 	</div>
 	<div class="border-shade view overflow-auto rounded-sm border">
 		<table class="w-full border-separate border-spacing-0">
 			<thead class="bg-background sticky top-0 shadow-[inset_0_-1px_0_var(--shade)]">
 				<tr class="[&>*]:border-shade">
-					<th class="w-[5%] border-r">#</th>
-					<th class="w-[18%] border-r">Manufacturer</th>
-					<th class="w-[10%] border-r">Model ID</th>
-					<th class="w-[5%] border-r">B/P</th>
-					<th class="w-[18%] border-r">Name</th>
-					<th class="border-r">Command</th>
-					<th class="w-[10%]">Length</th>
+					<th class="w-[5%] border-r pl-1 text-left">#</th>
+					<th class="w-[18%] border-r pl-1 text-left">Manufacturer</th>
+					<th class="w-[10%] border-r pl-1 text-left">Model ID</th>
+					<th class="w-[5%] border-r pl-1 text-left">B/P</th>
+					<th class="w-[18%] border-r pl-1 text-left">Name</th>
+					<th class="border-r pl-1 text-left">Command</th>
+					<th class="w-[10%] pl-1 text-left">Length</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -333,13 +341,13 @@
 		<table class="w-full border-separate border-spacing-0" id="table">
 			<thead class="bg-background sticky top-0 shadow-[inset_0_-1px_0_var(--shade)]">
 				<tr class="[&>*]:border-shade border-t-0">
-					<th class="w-[5%] border-r">#</th>
-					<th class="w-[18%] border-r">Manufacturer</th>
-					<th class="w-[10%] border-r">Model ID</th>
-					<th class="w-[5%] border-r">B/P</th>
-					<th class="w-[18%] border-r">Length</th>
-					<th class="border-r">Command</th>
-					<th class="w-[10%]">Length</th>
+					<th class="w-[5%] border-r pl-1 text-left">#</th>
+					<th class="w-[18%] border-r pl-1 text-left">Manufacturer</th>
+					<th class="w-[10%] border-r pl-1 text-left">Model ID</th>
+					<th class="w-[5%] border-r pl-1 text-left">B/P</th>
+					<th class="w-[18%] border-r pl-1 text-left">Name</th>
+					<th class="border-r pl-1 text-left">Command</th>
+					<th class="w-[10%] pl-1 text-left">Length</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -354,7 +362,7 @@
 			class="hover:bg-text hover:text-background"
 			onclick={() => {
 				custom.showModal();
-			}}>Custom</button
+			}}>Custom Command</button
 		>
 		<button
 			class="hover:bg-text hover:text-background"
@@ -363,12 +371,6 @@
 			}}>Send</button
 		>
 	</div>
-	<button
-		class="hover:bg-text hover:text-background"
-		onclick={() => {
-			messages = [];
-		}}>Clear</button
-	>
 </div>
 
 <Dialog bind:dialog
