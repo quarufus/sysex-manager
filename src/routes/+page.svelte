@@ -30,8 +30,8 @@
 	let custom_cmd: string = $state('');
 	let files: FileList | null = $state(null);
 	let element!: HTMLDivElement;
-	let dialog!: HTMLDialogElement;
-	let custom!: HTMLDialogElement;
+	let dialog: Dialog;
+	let custom: Dialog;
 
 	onMount(() => {
 		if (
@@ -372,7 +372,7 @@
 	</div>
 </div>
 
-<Dialog bind:dialog
+<Dialog bind:this={dialog}
 	>{#snippet content()}
 		<div class="flex justify-between">
 			<label for="pause">Pause between messages</label>
@@ -389,7 +389,7 @@
 >
 
 <Dialog
-	bind:dialog={custom}
+	bind:this={custom}
 	actionText="Ok"
 	actionCallback={() => {
 		custom.close();
