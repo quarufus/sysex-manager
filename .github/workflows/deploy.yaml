@@ -30,7 +30,7 @@ jobs:
         run: npm install
 
       - name: Svelte check
-        run: npm run check
+        run: npm run sv:check
 
       - name: Run ESLint
         run: npm run lint

@@ -44,8 +44,6 @@
 	let customCmd: string = $state('');
 	let files: FileList | undefined = $state();
 	let element!: HTMLDivElement;
-	//let dialog!: HTMLDialogElement;
-	//let custom!: HTMLDialogElement;
 
 	onMount(() => {
 		if (

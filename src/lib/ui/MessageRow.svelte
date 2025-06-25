@@ -3,7 +3,7 @@
 	const { message, position }: { message: Message; position: number } = $props();
 	import { downloadMessage } from '$lib';
 
-	let dialog!: HTMLDialogElement;
+	let dialog: Dialog;
 
 	const parsed = message.data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 	const command = parsed.slice(8, 18) == 'BankBackup' ? 'Bank Backup' : 'Preset Backup'; //`${parsed.slice(6, 20)} ... ${parsed.slice(-14, -1)}`;
@@ -39,7 +39,7 @@
 </tr>
 
 <Dialog
-	bind:dialog
+	bind:this={dialog}
 	actionText="Download"
 	actionCallback={() => {
 		downloadMessage(message.raw);

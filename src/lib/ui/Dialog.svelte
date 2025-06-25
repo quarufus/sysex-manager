@@ -1,30 +1,27 @@
 <script lang="ts">
 	import { type Snippet } from 'svelte';
-	let {
+	const {
 		content,
-		dialog = $bindable(),
 		actionText,
 		actionCallback,
 		style
 	}: {
 		content: Snippet;
-		dialog: HTMLDialogElement;
 		actionText?: string;
 		actionCallback?: () => void;
 		style?: string;
 	} = $props();
-	content = content;
-	actionText = actionText;
-	actionCallback = actionCallback;
-	style = style;
-</script>
 
-<!--<svelte:window
-	onkeydown={(e: KeyboardEvent) => {
-		if (e.key !== 'Enter') return;
-		actionCallback?.();
-	}}
-/>-->
+	let dialog: HTMLDialogElement;
+
+	export function showModal() {
+		dialog.showModal();
+	}
+
+	export function close() {
+		dialog.showModal();
+	}
+</script>
 
 <dialog
 	bind:this={dialog}
