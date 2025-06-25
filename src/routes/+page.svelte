@@ -2,7 +2,16 @@
 	import { onMount } from 'svelte';
 	import type { Filters, Message } from '$lib';
 	import { getManufacturer, toggleThemeValues } from '$lib';
-	import { MessageRow, Select, Settings, Circle, Dialog } from '$lib';
+	import { Settings, Circle, Orderable } from '$lib';
+	import * as Select from '$lib/components/ui/select/index';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index';
+	import { Input } from '$lib/components/ui/input/index';
+	import { Label } from '$lib/components/ui/label';
+	import * as Dialog from '$lib/components/ui/dialog/index';
+	import { Textarea } from '$lib/components/ui/textarea/index';
+	import { Slider } from '$lib/components/ui/slider/index';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index';
+	import * as Table from '$lib/components/ui/table/index';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -12,8 +21,13 @@
 	let outgoingMessages: Message[] = $state([]);
 	let idx: number = $state(0);
 	const bankpresetIn = $state({ bank: '', preset: 0 });
-	let filename = $state('');
 	let dark: boolean = $state(false);
+	const outTrigger = $derived(
+		midiOutputs.find((d) => d.id === selectedOutput)?.name ?? 'Choose MIDI out device'
+	);
+	const inTrigger = $derived(
+		midiInputs.find((d) => d.id === selectedInput)?.name ?? 'Choose MIDI in device'
+	);
 
 	const filters: Filters = $state({
 		clock: false,
@@ -27,11 +41,11 @@
 	});
 
 	let pause: number = $state(0);
-	let custom_cmd: string = $state('');
-	let files: FileList | null = $state(null);
+	let customCmd: string = $state('');
+	let files: FileList | undefined = $state();
 	let element!: HTMLDivElement;
-	let dialog!: HTMLDialogElement;
-	let custom!: HTMLDialogElement;
+	//let dialog!: HTMLDialogElement;
+	//let custom!: HTMLDialogElement;
 
 	onMount(() => {
 		if (
@@ -110,6 +124,7 @@
 				manufacturer: getManufacturer(s.slice(1, end)),
 				modelId: s.slice(end, end + 2),
 				bankpreset: `${bankpresetIn.bank}${bankpresetIn.preset > 0 ? bankpresetIn.preset.toString() : ''}`,
+				name: '',
 				data: s,
 				raw: l
 			});
@@ -120,6 +135,7 @@
 
 	function sendSysEx() {
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
+		console.log('sending', outgoingMessages, device);
 		if (outgoingMessages.length == 0) {
 			return;
 		}
@@ -138,7 +154,7 @@
 		}
 	}
 
-	function onInputChange() {
+	$effect(() => {
 		midiInputs.forEach((input) => {
 			input.onmidimessage = null;
 		});
@@ -146,22 +162,21 @@
 		if (device) {
 			device.onmidimessage = handleMIDIMessage;
 		}
-	}
+	});
 
-	function onOutputChange() {
+	$effect(() => {
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
 		if (device) {
 			device.open().catch((error: unknown) => {
 				console.error(error);
 			});
 		}
-	}
+	});
 
 	async function loadFile() {
 		if (!files) {
 			return;
 		}
-		filename = files[0].name;
 		const buffer = await files[0].arrayBuffer();
 		const bytes = new Uint8Array(buffer);
 		outgoingMessages = [];
@@ -183,6 +198,7 @@
 				manufacturerId: s.slice(1, 4),
 				manufacturer: getManufacturer(s.slice(1, end)),
 				modelId: s.slice(end, end + 2),
+				name: text.substring(15, 18),
 				bankpreset: `${bank}${preset ? preset.toString() : ''}`,
 				data: s,
 				raw: l
@@ -212,6 +228,7 @@
 			manufacturerId: message.slice(1, 4),
 			manufacturer: getManufacturer(message.slice(1, end)),
 			modelId: message.slice(end, end + 2),
+			name: '',
 			bankpreset: '',
 			data: message,
 			raw: raw
@@ -234,172 +251,140 @@
 
 <div class="flex items-center justify-between p-4">
 	<h1 class="text-2xl">Sysex Manager</h1>
-	<div class="flex">
+	<div class="flex items-center gap-4">
+		<Select.Root type="single" bind:value={selectedOutput} name="MIDI out">
+			<Select.Trigger>
+				{outTrigger}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Group>
+					<Select.Label>Choose MIDI out device</Select.Label>
+					{#each midiOutputs as device (device.id)}
+						<Select.Item value={device.id} label={device.name ?? ''}>{device.name}</Select.Item>
+					{/each}
+				</Select.Group>
+			</Select.Content>
+		</Select.Root>
+		<Select.Root type="single" bind:value={selectedInput} name="MIDI in">
+			<Select.Trigger>
+				{inTrigger}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Group>
+					<Select.Label>Choose MIDI in device</Select.Label>
+					{#each midiInputs as device (device.id)}
+						<Select.Item value={device.id} label={device.name ?? ''}>{device.name}</Select.Item>
+					{/each}
+				</Select.Group>
+			</Select.Content>
+		</Select.Root>
+		<Dialog.Root>
+			<Dialog.Trigger><Settings /></Dialog.Trigger>
+			<Dialog.Content>
+				<Dialog.Header>Settings</Dialog.Header>
+				<div class="flex justify-between">
+					<Label>Pause between messages</Label>
+					<Input class="w-min text-right" type="number" bind:value={pause} />
+				</div>
+				<Slider type="single" bind:value={pause} max={5000} step={1} />
+			</Dialog.Content>
+		</Dialog.Root>
+
 		<button
-			class="h-min"
-			onclick={() => {
-				dialog.showModal();
-			}}><Settings class="hover:fill-background" /></button
-		>
-		<button
-			class="hover:bg-background"
+			class="size-6 px-0"
 			onclick={() => {
 				changeTheme();
 			}}
-			><Circle class={dark ? 'hover:fill-background' : 'fill-background hover:fill-text'} /></button
 		>
+			<Circle class={dark ? 'hover:fill-background' : 'fill-background hover:fill-text'} />
+		</button>
 	</div>
 </div>
 <br />
 <br />
-<div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto_min-content] gap-8">
-	<!--
-	<div></div>
-	<div>
-		<input type="checkbox" id="clock" name="clock" bind:checked={filters.clock} />
-		<label for="clock">Clock</label>
-		<input type="checkbox" id="onoff" name="onoff" bind:checked={filters.note} />
-		<label for="onoff">Note On/Off</label>
-		<input type="checkbox" id="after" name="after" bind:checked={filters.after} />
-		<label for="after">Aftertouch</label>
-		<input type="checkbox" id="cc" name="cc" bind:checked={filters.cc} />
-		<label for="cc">Control Change</label>
-		<input type="checkbox" id="pc" name="pc" bind:checked={filters.pc} />
-		<label for="pc">Program Change</label>
-		<input type="checkbox" id="pressure" name="pressure" bind:checked={filters.pressure} />
-		<label for="pressure">Channel Pressure</label>
-		<input type="checkbox" id="bend" name="bend" bind:checked={filters.bend} />
-		<label for="bend">Pitch Bend</label>
-		<input type="checkbox" id="sysex" name="sysex" bind:checked={filters.sysex} />
-		<label for="sysex">SysEx</label>
-		<input type="range" name="pause" min="0" max="1000" bind:value={pause} />
-		<label for="pause">Pause between messages</label>
-	</div>
-	-->
-	<div class="flex items-center justify-between">
-		<Select
-			onValueChange={onOutputChange}
-			items={midiOutputs.map((d) => ({ value: d.id, label: d.name ?? '' }))}
-			bind:value={selectedOutput}
-			type="single"
-			placeholder="Choose MIDI out device"
-		/>
-		<input
-			class="h-min w-[197px] cursor-pointer hover:bg-yellow-300"
-			bind:files
-			onchange={loadFile}
-			type="file"
-			id="file_input"
-			hidden
-		/>
-		<div class="flex items-baseline">
-			<label id="file" for="file_input">Open File</label>
-			<p>{filename}</p>
+<div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto] gap-8">
+	<div class="flex items-end justify-between">
+		<div class="grid w-full max-w-sm items-center gap-1.5">
+			<label for="file">Open File</label>
+			<Input id="file" type="file" bind:files onchange={loadFile} />
 		</div>
+		<Dialog.Root>
+			<Dialog.Trigger class={buttonVariants({ variant: 'default' })}>Create Command</Dialog.Trigger>
+			<Dialog.Content>
+				<Dialog.Header>
+					<Dialog.Title>Create Command</Dialog.Title>
+					<Dialog.Description
+						>Create custom sysex commands to send to your device.</Dialog.Description
+					>
+				</Dialog.Header>
+				<Textarea placeholder="Type your command here." bind:value={customCmd} />
+				<Dialog.Footer>
+					<Dialog.Close>
+						<Button
+							type="submit"
+							onclick={() => {
+								outgoingMessages.push(
+									parseMessage(Uint8Array.from(customCmd.split(' ').map((v) => parseInt(v, 16))))
+								);
+							}}>Add command</Button
+						>
+					</Dialog.Close>
+				</Dialog.Footer>
+			</Dialog.Content>
+		</Dialog.Root>
+		<Button
+			class="hover:bg-text hover:text-background"
+			onclick={() => {
+				sendSysEx();
+			}}>Send -&gt;</Button
+		>
 	</div>
-	<div class="flex justify-between">
-		<Select
-			onValueChange={onInputChange}
-			items={midiInputs.map((d) => ({ value: d.id, label: d.name ?? '' }))}
-			bind:value={selectedInput}
-			type="single"
-			placeholder="Choose MIDI in device"
-		/>
-		<button
+	<div class="flex items-end justify-between">
+		<Button>&lt;- Copy Over</Button>
+		<Button
 			class="hover:bg-text hover:text-background w-min"
 			onclick={() => {
 				messages = [];
-			}}>Clear</button
+			}}>Clear</Button
 		>
 	</div>
 	<div class="border-shade view overflow-auto rounded-sm border">
-		<table class="w-full border-separate border-spacing-0">
-			<thead class="bg-background sticky top-0 shadow-[inset_0_-1px_0_var(--shade)]">
-				<tr class="[&>*]:border-shade">
-					<th class="w-[5%] border-r pl-1 text-left">#</th>
-					<th class="w-[18%] border-r pl-1 text-left">Manufacturer</th>
-					<th class="w-[10%] border-r pl-1 text-left">Model ID</th>
-					<th class="w-[5%] border-r pl-1 text-left">B/P</th>
-					<th class="w-[18%] border-r pl-1 text-left">Name</th>
-					<th class="border-r pl-1 text-left">Command</th>
-					<th class="w-[10%] pl-1 text-left">Length</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each outgoingMessages as msg, i (msg.id)}
-					<MessageRow message={msg} position={i} />
-				{/each}
-			</tbody>
-		</table>
+		<ScrollArea class="h-full">
+			<Orderable items={outgoingMessages} />
+		</ScrollArea>
 	</div>
 	<div
 		class="win border-shade view overflow-auto rounded-sm border text-wrap"
 		id="in"
 		bind:this={element}
 	>
-		<table class="w-full border-separate border-spacing-0" id="table">
-			<thead class="bg-background sticky top-0 shadow-[inset_0_-1px_0_var(--shade)]">
-				<tr class="[&>*]:border-shade border-t-0">
-					<th class="w-[5%] border-r pl-1 text-left">#</th>
-					<th class="w-[18%] border-r pl-1 text-left">Manufacturer</th>
-					<th class="w-[10%] border-r pl-1 text-left">Model ID</th>
-					<th class="w-[5%] border-r pl-1 text-left">B/P</th>
-					<th class="w-[18%] border-r pl-1 text-left">Name</th>
-					<th class="border-r pl-1 text-left">Command</th>
-					<th class="w-[10%] pl-1 text-left">Length</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each messages as msg, i (msg.id)}
-					<MessageRow message={msg} position={i} />
-				{/each}
-			</tbody>
-		</table>
-	</div>
-	<div>
-		<button
-			class="hover:bg-text hover:text-background"
-			onclick={() => {
-				custom.showModal();
-			}}>Create Command</button
-		>
-		<button
-			class="hover:bg-text hover:text-background"
-			onclick={() => {
-				sendSysEx();
-			}}>Send</button
-		>
+		<ScrollArea class="h-full">
+			<Table.Root>
+				<Table.Header>
+					<Table.Row>
+						<Table.Head>#</Table.Head>
+						<Table.Head>Manufacturer</Table.Head>
+						<Table.Head>Model Id</Table.Head>
+						<Table.Head>B/P</Table.Head>
+						<Table.Head>Name</Table.Head>
+						<Table.Head>Command</Table.Head>
+						<Table.Head>Length</Table.Head>
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{#each messages as item, index (item.id)}
+						<Table.Row>
+							<Table.Cell>{index}</Table.Cell>
+							<Table.Cell>{item.manufacturer}</Table.Cell>
+							<Table.Cell>{item.modelId.join(' ')}</Table.Cell>
+							<Table.Cell>{item.bankpreset}</Table.Cell>
+							<Table.Cell>{item.name}</Table.Cell>
+							<Table.Cell>{item.data.slice(0, 10)}</Table.Cell>
+							<Table.Cell class="text-right font-mono">{item.raw.length}</Table.Cell>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		</ScrollArea>
 	</div>
 </div>
-
-<Dialog bind:dialog
-	>{#snippet content()}
-		<div class="flex justify-between">
-			<label for="pause">Pause between messages</label>
-			<div>
-				<input class="bg-shade border-0 text-right" type="number" bind:value={pause} />ms
-			</div>
-		</div>
-		<div class="flex justify-between">
-			<p>0</p>
-			<input type="range" name="pause" min="0" max="5000" bind:value={pause} />
-			<p>5000</p>
-		</div>
-	{/snippet}</Dialog
->
-
-<Dialog
-	bind:dialog={custom}
-	actionText="Ok"
-	actionCallback={() => {
-		custom.close();
-		if (custom_cmd.length > 0)
-			outgoingMessages.push(
-				parseMessage(Uint8Array.from(custom_cmd.split(' ').map((v) => parseInt(v, 16))))
-			);
-	}}
->
-	{#snippet content()}
-		<textarea class="bg-shade h-32 w-full" bind:value={custom_cmd} spellcheck="false"></textarea>
-	{/snippet}
-</Dialog>

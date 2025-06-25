@@ -27,7 +27,7 @@
 	<td class="border-b px-1 pt-1 pb-0.5">{message.manufacturer}</td>
 	<td class="border-b px-1 pt-1 pb-0.5">{message.modelId.join(' ')}</td>
 	<td class="border-b px-1 pt-1 pb-0.5">{message.bankpreset}</td>
-	<td class="border-b px-1 pt-1 pb-0.5"></td>
+	<td class="border-b px-1 pt-1 pb-0.5">{message.name}</td>
 	<td
 		class="hover:bg-text hover:text-background cursor-pointer border-b px-1 pt-0.5"
 		onclick={() => {

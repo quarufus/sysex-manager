@@ -4,8 +4,25 @@ export interface Message {
 	manufacturer: string;
 	modelId: string[];
 	bankpreset: string;
+	name: string;
 	data: string[];
 	raw: Uint8Array;
+}
+
+export interface Bank {
+	id: number;
+	name: string;
+	presets: Preset[];
+}
+
+export interface Preset {
+	id: number;
+	name: string;
+	base: string;
+	mod_wheel: string;
+	velocity: string;
+	aftertouch: string;
+	cc_74: string;
 }
 
 export interface Filters {

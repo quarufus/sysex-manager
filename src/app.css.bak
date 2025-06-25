@@ -1,0 +1,231 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+@plugin "@iconify/tailwind4";
+@custom-variant dark (&:where(.dark, .dark *));
+@theme {
+	--font-satoshi: 'Satoshi-Variable', 'sans';
+
+	--color-text: var(--fg);
+	--color-background: var(--bg);
+	--color-primary: var(--primary);
+	--color-secondary: var(--secondary);
+	--color-accent: var(--accent);
+	--color-shade: var(--shade);
+}
+/* @source inline("last:border-b-0"); */
+/* #f9f4f9 */
+
+body {
+	font-family: var(--font-satoshi);
+	font-weight: 400;
+	font-style: normal;
+}
+
+.view {
+	scrollbar-color: var(--shade) var(--bg);
+	scrollbar-width: auto;
+}
+
+@supports (scrollbar-width: thin;) {
+	.view {
+		scrollbar-color: var(--fg) var(--bg);
+		scrollbar-width: thin;
+	}
+}
+
+@supports selector(::-webkit-scrollbar) {
+	body::-webkit-scrollbar-thumb {
+		background: var(--bg);
+	}
+	body::-webkit-scrollbar-track {
+		background-color: var(--fg);
+		border-radius: 10px;
+	}
+	body::-webkit-scrollbar {
+		max-width: thin;
+	}
+}
+
+button,
+input[type='file'],
+#file {
+	cursor: pointer;
+	padding: 4px 8px;
+	font-size: 1.1rem;
+	font-weight: 500;
+}
+
+#file:hover {
+	background-color: var(--fg);
+	color: var(--bg);
+}
+
+.inverse {
+	background-color: var(--fg);
+	color: var(--bg);
+}
+
+select {
+	outline: none;
+	border-radius: 0.25em;
+	padding: 0.25em 0.5em;
+}
+
+option {
+	background-color: white;
+	color: black;
+}
+
+th {
+	background-clip: padding-box;
+	z-index: 2;
+}
+
+th::after {
+	content: '';
+	width: 1px;
+	height: 100%;
+	background-color: black;
+	display: block;
+	position: relative;
+	right: 0;
+	top: 0;
+}
+
+@font-face {
+	font-family: 'Satoshi-Light';
+	src:
+		url('/fonts/Satoshi/Satoshi-Light.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-Light.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-Light.ttf') format('truetype');
+	font-weight: 300;
+	font-display: swap;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'Satoshi-LightItalic';
+	src:
+		url('/fonts/Satoshi/Satoshi-LightItalic.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-LightItalic.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-LightItalic.ttf') format('truetype');
+	font-weight: 300;
+	font-display: swap;
+	font-style: italic;
+}
+@font-face {
+	font-family: 'Satoshi-Regular';
+	src:
+		url('/fonts/Satoshi/Satoshi-Regular.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-Regular.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-display: swap;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'Satoshi-Italic';
+	src:
+		url('/fonts/Satoshi/Satoshi-Italic.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-Italic.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-Italic.ttf') format('truetype');
+	font-weight: 400;
+	font-display: swap;
+	font-style: italic;
+}
+@font-face {
+	font-family: 'Satoshi-Medium';
+	src:
+		url('/fonts/Satoshi/Satoshi-Medium.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-Medium.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-Medium.ttf') format('truetype');
+	font-weight: 500;
+	font-display: swap;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'Satoshi-MediumItalic';
+	src:
+		url('/fonts/Satoshi/Satoshi-MediumItalic.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-MediumItalic.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-MediumItalic.ttf') format('truetype');
+	font-weight: 500;
+	font-display: swap;
+	font-style: italic;
+}
+@font-face {
+	font-family: 'Satoshi-Bold';
+	src:
+		url('/fonts/Satoshi/Satoshi-Bold.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-Bold.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-Bold.ttf') format('truetype');
+	font-weight: 700;
+	font-display: swap;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'Satoshi-BoldItalic';
+	src:
+		url('/fonts/Satoshi/Satoshi-BoldItalic.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-BoldItalic.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-BoldItalic.ttf') format('truetype');
+	font-weight: 700;
+	font-display: swap;
+	font-style: italic;
+}
+@font-face {
+	font-family: 'Satoshi-Black';
+	src:
+		url('/fonts/Satoshi/Satoshi-Black.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-Black.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-Black.ttf') format('truetype');
+	font-weight: 900;
+	font-display: swap;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'Satoshi-BlackItalic';
+	src:
+		url('/fonts/Satoshi/Satoshi-BlackItalic.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-BlackItalic.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-BlackItalic.ttf') format('truetype');
+	font-weight: 900;
+	font-display: swap;
+	font-style: italic;
+}
+/**
+* This is a variable font
+* You can control variable axes as shown below:
+* font-variation-settings: wght 900.0;
+*
+* available axes:
+'wght' (range from 300.0 to 900.0
+*/
+@font-face {
+	font-family: 'Satoshi-Variable';
+	src:
+		url('/fonts/Satoshi/Satoshi-Variable.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-Variable.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-Variable.ttf') format('truetype');
+	font-weight: 300 900;
+	font-display: swap;
+	font-style: normal;
+}
+/**
+* This is a variable font
+* You can control variable axes as shown below:
+* font-variation-settings: wght 900.0;
+*
+* available axes:
+'wght' (range from 300.0 to 900.0
+*/
+@font-face {
+	font-family: 'Satoshi-VariableItalic';
+	src:
+		url('/fonts/Satoshi/Satoshi-VariableItalic.woff2') format('woff2'),
+		url('/fonts/Satoshi/Satoshi-VariableItalic.woff') format('woff'),
+		url('/fonts/Satoshi/Satoshi-VariableItalic.ttf') format('truetype');
+	font-weight: 300 900;
+	font-display: swap;
+	font-style: italic;
+}

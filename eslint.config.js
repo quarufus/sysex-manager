@@ -34,9 +34,12 @@ const svelteConfig = ts.config({
 			projectService: true,
 			parser: ts.parser
 		}
+	},
+	rules: {
+		'@typescript-eslint/no-unsafe-call': 'warn'
 	}
 });
 
 export default ts.config(...tsConfig, ...svelteConfig, {
-	ignores: ['eslint.config.js', 'svelte.config.js', 'build', '.svelte-kit/']
+	ignores: ['eslint.config.js', 'svelte.config.js', 'build', '.svelte-kit/', 'src/lib/components']
 });
