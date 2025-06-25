@@ -7,7 +7,13 @@ import svelteConfig from './svelte.config.js';
 
 export default ts.config(
 	{
-		ignores: ['eslint.config.js', 'svelte.config.js', 'build', '.svelte-kit/']
+		ignores: [
+			'eslint.config.js',
+			'svelte.config.js',
+			'build',
+			'.svelte-kit/',
+			'src/lib/components/ui/'
+		]
 	},
 	{
 		files: ['**/*.js', '**/*.ts', '**/*.svelte'],

@@ -294,7 +294,7 @@
 				changeTheme();
 			}}
 		>
-			<Circle class={dark ? 'hover:fill-background' : 'fill-background hover:fill-text'} />
+			<Circle class={dark ? 'hover:fill-background' : 'fill-background hover:fill-foreground'} />
 		</button>
 	</div>
 </div>
