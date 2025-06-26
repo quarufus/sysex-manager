@@ -12,7 +12,8 @@ export default ts.config(
 			'svelte.config.js',
 			'build',
 			'.svelte-kit/',
-			'src/lib/components/ui/'
+			'src/lib/components/ui/',
+			'src/routes/test/'
 		]
 	},
 	{

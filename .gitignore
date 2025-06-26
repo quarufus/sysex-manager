@@ -24,3 +24,5 @@ vite.config.ts.timestamp-*
 
 # eslint
 .eslintcache
+
+/src/routes/test

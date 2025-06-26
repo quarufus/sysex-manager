@@ -82,3 +82,9 @@ export function toggleThemeValues(dark: boolean) {
 	}
 	style.setProperty('--accent', 'oklch(0.7062 0.1469 77.98)');
 }
+
+export function bytesToString(bytes: Uint8Array): string {
+	return Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, '0').toUpperCase())
+		.join(' ');
+}
