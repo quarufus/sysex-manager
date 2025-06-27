@@ -57,6 +57,11 @@
 		return parsed.slice(8, 18) == 'BankBackup' ? 'Bank Backup' : 'Preset Backup';
 	}
 
+	function getName(data: string[]): string {
+		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
+		return parsed.slice(8, 18) == 'BankBackup' ? '-' : parsed.slice(15, 17);
+	}
+
 	function toggleDialog() {
 		open = !open;
 	}
@@ -103,9 +108,9 @@
 			>
 				<Table.Cell>{index}</Table.Cell>
 				<Table.Cell>{item.manufacturer}</Table.Cell>
-				<Table.Cell>{item.modelId.join(' ')}</Table.Cell>
+				<Table.Cell>{item.model}</Table.Cell>
 				<Table.Cell>{item.bankpreset}</Table.Cell>
-				<Table.Cell>{item.name}</Table.Cell>
+				<Table.Cell>{getName(item.data)}</Table.Cell>
 				<Table.Cell>{parseCmd(item.data)}</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
 				<Table.Cell

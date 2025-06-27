@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Filters, Message } from '$lib';
-	import { getManufacturer, toggleThemeValues } from '$lib';
+	import { getManufacturer, getModel, toggleThemeValues } from '$lib';
 	import { Settings, Circle, Orderable } from '$lib';
 	import * as Select from '$lib/components/ui/select/index';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index';
@@ -12,6 +12,10 @@
 	import { Slider } from '$lib/components/ui/slider/index';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index';
 	import * as Table from '$lib/components/ui/table/index';
+	import Load from '$lib/icons/Load.svelte';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index';
+	import * as Alert from '$lib/components/ui/alert/index';
+	import { BankBackup } from '$lib/schema';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -28,6 +32,9 @@
 	const inTrigger = $derived(
 		midiInputs.find((d) => d.id === selectedInput)?.name ?? 'Choose MIDI in device'
 	);
+	let sendStatus: string = $state('Send');
+	let doAlert: boolean = $state(false);
+	let alertContent: { title: string; description?: string } = $state({ title: '' });
 
 	const filters: Filters = $state({
 		clock: false,
@@ -120,7 +127,7 @@
 				id: idx,
 				manufacturerId: s.slice(1, 4),
 				manufacturer: getManufacturer(s.slice(1, end)),
-				modelId: s.slice(end, end + 2),
+				model: s.slice(end, end + 2).join(' '),
 				bankpreset: `${bankpresetIn.bank}${bankpresetIn.preset > 0 ? bankpresetIn.preset.toString() : ''}`,
 				name: '',
 				data: s,
@@ -133,13 +140,20 @@
 
 	function sendSysEx() {
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
-		console.log('sending', outgoingMessages, device);
+		if (!selectedOutput) {
+			alert('Choose MIDI out device first.');
+			return;
+		}
 		if (outgoingMessages.length == 0) {
+			alert('There are no messages to send.');
 			return;
 		}
 
-		const now = performance.now();
+		sendStatus = 'Sending';
 
+		//const now = performance.now();
+
+		/*
 		for (let i = 0; i < outgoingMessages.length; i++) {
 			const timestamp = now + i * pause;
 			if (device) {
@@ -150,6 +164,18 @@
 				}
 			}
 		}
+		*/
+
+		let i = 0;
+		setTimeout(function run() {
+			if (device) device.send(outgoingMessages[i].raw);
+			if (i == outgoingMessages.length - 1) {
+				sendStatus = 'Send';
+				return;
+			}
+			i++;
+			setTimeout(run, pause);
+		}, pause);
 	}
 
 	$effect(() => {
@@ -193,9 +219,9 @@
 			}
 			outgoingMessages.push({
 				id: idx + 1000,
-				manufacturerId: s.slice(1, 4),
+				manufacturerId: s.slice(1, end),
 				manufacturer: getManufacturer(s.slice(1, end)),
-				modelId: s.slice(end, end + 2),
+				model: s.slice(end, end + 2).join(' '),
 				name: text.substring(15, 18),
 				bankpreset: `${bank}${preset ? preset.toString() : ''}`,
 				data: s,
@@ -203,6 +229,15 @@
 			});
 			idx++;
 		});
+
+		const parsed = outgoingMessages.map((m) => {
+			const text = m.data
+				.map((v: string) => String.fromCharCode(parseInt(v, 16)))
+				.join('')
+				.slice(6, -1);
+			return JSON.parse(text);
+		});
+		console.log(BankBackup.parse(parsed));
 	}
 
 	function splitSysExData(data: Uint8Array) {
@@ -221,11 +256,13 @@
 		const message = Array.from(raw).map((v) => v.toString(16).padStart(2, '0'));
 		idx++;
 		const end = message[1] == '00' ? 4 : 2;
+		const manufacturer = getManufacturer(message.slice(1, end));
+		const model = getModel(manufacturer, message.slice(end, end + 2));
 		return {
 			id: idx + 1000,
-			manufacturerId: message.slice(1, 4),
-			manufacturer: getManufacturer(message.slice(1, end)),
-			modelId: message.slice(end, end + 2),
+			manufacturerId: message.slice(1, end),
+			manufacturer: manufacturer,
+			model: model,
 			name: '',
 			bankpreset: '',
 			data: message,
@@ -238,6 +275,11 @@
 		document.documentElement.classList.toggle('dark', dark);
 		localStorage.theme = dark ? 'dark' : '';
 		toggleThemeValues(dark);
+	}
+
+	function alert(title: string, description?: string) {
+		doAlert = true;
+		alertContent = { title, description };
 	}
 
 	const scrollToBottom = (node: HTMLDivElement) => {
@@ -331,14 +373,25 @@
 			</Dialog.Content>
 		</Dialog.Root>
 		<Button
+			disabled={sendStatus == 'Sending'}
 			class="hover:bg-text hover:text-background"
 			onclick={() => {
 				sendSysEx();
-			}}>Send -&gt;</Button
+			}}
 		>
+			{#if sendStatus == 'Send'}
+				{sendStatus} -&gt;
+			{:else}
+				{sendStatus} <Load class="animate-spin" />
+			{/if}
+		</Button>
 	</div>
 	<div class="flex items-end justify-between">
-		<Button>&lt;- Copy Over</Button>
+		<Button
+			onclick={() => {
+				outgoingMessages = messages;
+			}}>&lt;- Copy Over</Button
+		>
 		<Button
 			class="hover:bg-text hover:text-background w-min"
 			onclick={() => {
@@ -374,7 +427,7 @@
 						<Table.Row>
 							<Table.Cell>{index}</Table.Cell>
 							<Table.Cell>{item.manufacturer}</Table.Cell>
-							<Table.Cell>{item.modelId.join(' ')}</Table.Cell>
+							<Table.Cell>{item.model}</Table.Cell>
 							<Table.Cell>{item.bankpreset}</Table.Cell>
 							<Table.Cell>{item.name}</Table.Cell>
 							<Table.Cell>{item.data.slice(0, 10)}</Table.Cell>
@@ -386,3 +439,10 @@
 		</ScrollArea>
 	</div>
 </div>
+
+<AlertDialog.Root bind:open={doAlert}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>{alertContent.title}</AlertDialog.Header>
+		<Alert.Description>{alertContent.description}</Alert.Description>
+	</AlertDialog.Content>
+</AlertDialog.Root>

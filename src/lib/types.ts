@@ -2,7 +2,7 @@ export interface Message {
 	id: number;
 	manufacturerId: string[];
 	manufacturer: string;
-	modelId: string[];
+	model: string;
 	bankpreset: string;
 	name: string;
 	data: string[];

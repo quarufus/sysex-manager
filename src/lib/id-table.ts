@@ -1,4 +1,5 @@
 type ManufacturerId = string[];
+type ModelId = string[];
 
 export function getManufacturer(id: ManufacturerId): string {
 	let key: string;
@@ -13,6 +14,21 @@ export function getManufacturer(id: ManufacturerId): string {
 
 	return MIDI_MANUFACTURERS[key] || 'Unknown Manufacturer';
 }
+
+export function getModel(manufacturer: string, id: ModelId): string {
+	let key: string;
+	if (manufacturer == 'Dreadbox P.C.') {
+		key = id.slice(0, 2).join(',');
+	} else {
+		return 'Unknown manufacturer';
+	}
+
+	return DREADBOX_DEVICES[key] || 'Unknown device';
+}
+
+const DREADBOX_DEVICES: Record<string, string> = {
+	'00,09': 'Artemis'
+};
 
 const MIDI_MANUFACTURERS: Record<string, string> = {
 	'00': '[Used for ID Extensions]',

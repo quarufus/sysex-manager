@@ -25,7 +25,7 @@
 <tr class="[&>*]:border-b-shade border-l-0 font-mono first:border-t-0 nth-last-2:[&>*]:border-b-0">
 	<td class="border-b px-1 pt-1 pb-0.5">{position}</td>
 	<td class="border-b px-1 pt-1 pb-0.5">{message.manufacturer}</td>
-	<td class="border-b px-1 pt-1 pb-0.5">{message.modelId.join(' ')}</td>
+	<td class="border-b px-1 pt-1 pb-0.5">{message.model}</td>
 	<td class="border-b px-1 pt-1 pb-0.5">{message.bankpreset}</td>
 	<td class="border-b px-1 pt-1 pb-0.5">{message.name}</td>
 	<td
