@@ -1,6 +1,5 @@
 export interface Message {
 	id: number;
-	manufacturerId: string[];
 	manufacturer: string;
 	model: string;
 	bankpreset: string;

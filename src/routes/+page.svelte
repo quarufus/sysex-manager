@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Filters, Message } from '$lib';
-	import { getManufacturer, getModel, toggleThemeValues } from '$lib';
+	import { getInfo, getManufacturer, toggleThemeValues } from '$lib';
 	import { Settings, Circle, Orderable } from '$lib';
 	import * as Select from '$lib/components/ui/select/index';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index';
@@ -13,9 +13,10 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index';
 	import * as Table from '$lib/components/ui/table/index';
 	import Load from '$lib/icons/Load.svelte';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog/index';
-	import * as Alert from '$lib/components/ui/alert/index';
 	import { BankBackup } from '$lib/schema';
+	import { z } from 'zod';
+	import { default as MyAlert } from '$lib/ui/Alert.svelte';
+	import { displayAlert } from '$lib/stores/alert';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -33,8 +34,6 @@
 		midiInputs.find((d) => d.id === selectedInput)?.name ?? 'Choose MIDI in device'
 	);
 	let sendStatus: string = $state('Send');
-	let doAlert: boolean = $state(false);
-	let alertContent: { title: string; description?: string } = $state({ title: '' });
 
 	const filters: Filters = $state({
 		clock: false,
@@ -110,7 +109,9 @@
 
 		const device = midiInputs.find((d) => d.id == selectedInput);
 		if (!device?.manufacturer || !device.name) {
-			// return;
+			if (getManufacturer(msg.data) == 'Unknown Manufacturer') {
+				return;
+			}
 		}
 		const lines = msg.data[0] == 240 ? splitSysExData(msg.data) : [msg.data];
 		lines.forEach((l) => {
@@ -125,7 +126,6 @@
 			const end = s[1] == '00' ? 4 : 2;
 			messages.push({
 				id: idx,
-				manufacturerId: s.slice(1, 4),
 				manufacturer: getManufacturer(s.slice(1, end)),
 				model: s.slice(end, end + 2).join(' '),
 				bankpreset: `${bankpresetIn.bank}${bankpresetIn.preset > 0 ? bankpresetIn.preset.toString() : ''}`,
@@ -141,11 +141,11 @@
 	function sendSysEx() {
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
 		if (!selectedOutput) {
-			alert('Choose MIDI out device first.');
+			displayAlert('Choose a MIDI out device to send data.');
 			return;
 		}
 		if (outgoingMessages.length == 0) {
-			alert('There are no messages to send.');
+			displayAlert('There are no messages to send.');
 			return;
 		}
 
@@ -209,7 +209,6 @@
 		let preset = 0;
 		lines.forEach((l) => {
 			const s = Array.from(l).map((v) => v.toString(16).padStart(2, '0'));
-			const end = s[1] == '00' ? 4 : 2;
 			const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 			if (text.substring(8, 18) == 'BankBackup') {
 				bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
@@ -217,11 +216,11 @@
 			} else {
 				preset++;
 			}
+			const [manufacturer, model] = getInfo(l);
 			outgoingMessages.push({
 				id: idx + 1000,
-				manufacturerId: s.slice(1, end),
-				manufacturer: getManufacturer(s.slice(1, end)),
-				model: s.slice(end, end + 2).join(' '),
+				manufacturer: manufacturer,
+				model: model,
 				name: text.substring(15, 18),
 				bankpreset: `${bank}${preset ? preset.toString() : ''}`,
 				data: s,
@@ -237,7 +236,15 @@
 				.slice(6, -1);
 			return JSON.parse(text);
 		});
-		console.log(BankBackup.parse(parsed));
+		try {
+			console.log(BankBackup.parse(parsed));
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				displayAlert('Error', error.errors[0].message);
+			} else {
+				displayAlert('Error', error?.toString());
+			}
+		}
 	}
 
 	function splitSysExData(data: Uint8Array) {
@@ -254,17 +261,19 @@
 
 	function parseMessage(raw: Uint8Array): Message {
 		const message = Array.from(raw).map((v) => v.toString(16).padStart(2, '0'));
+		const text = message.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 		idx++;
-		const end = message[1] == '00' ? 4 : 2;
-		const manufacturer = getManufacturer(message.slice(1, end));
-		const model = getModel(manufacturer, message.slice(end, end + 2));
+		let bank = '';
+		if (text.substring(8, 18) == 'BankBackup') {
+			bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
+		}
+		const [manufacturer, model] = getInfo(raw);
 		return {
 			id: idx + 1000,
-			manufacturerId: message.slice(1, end),
 			manufacturer: manufacturer,
 			model: model,
 			name: '',
-			bankpreset: '',
+			bankpreset: bank,
 			data: message,
 			raw: raw
 		};
@@ -275,11 +284,6 @@
 		document.documentElement.classList.toggle('dark', dark);
 		localStorage.theme = dark ? 'dark' : '';
 		toggleThemeValues(dark);
-	}
-
-	function alert(title: string, description?: string) {
-		doAlert = true;
-		alertContent = { title, description };
 	}
 
 	const scrollToBottom = (node: HTMLDivElement) => {
@@ -415,7 +419,7 @@
 					<Table.Row>
 						<Table.Head>#</Table.Head>
 						<Table.Head>Manufacturer</Table.Head>
-						<Table.Head>Model Id</Table.Head>
+						<Table.Head>Model</Table.Head>
 						<Table.Head>B/P</Table.Head>
 						<Table.Head>Name</Table.Head>
 						<Table.Head>Command</Table.Head>
@@ -440,9 +444,4 @@
 	</div>
 </div>
 
-<AlertDialog.Root bind:open={doAlert}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>{alertContent.title}</AlertDialog.Header>
-		<Alert.Description>{alertContent.description}</Alert.Description>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<MyAlert />

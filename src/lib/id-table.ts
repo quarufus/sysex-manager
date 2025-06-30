@@ -1,33 +1,56 @@
 type ManufacturerId = string[];
 type ModelId = string[];
 
-export function getManufacturer(id: ManufacturerId): string {
+export function getManufacturer(id: Uint8Array | ManufacturerId): string {
 	let key: string;
-	// Handle array input like ["00", "21", "3C"]
-	if (id.length === 1) {
-		key = id[0].toString();
-	} else if (id.length === 3) {
-		key = id.join(',').toUpperCase();
-	} else {
-		return 'Invalid MIDI ID format';
-	}
+	if (id instanceof Uint8Array) {
+		if (id[1].toString(16) == '0') {
+			key = Array.from(id.slice(1, 4))
+				.map((v) => v.toString(16).padStart(2, '0'))
+				.join(',')
+				.toUpperCase();
+		} else {
+			key = id[1].toString(16);
+		}
 
-	return MIDI_MANUFACTURERS[key] || 'Unknown Manufacturer';
+		return MIDI_MANUFACTURERS[key] || 'Unknown Manufacturer';
+	} else {
+		if (id[1] === '00') {
+			key = id.slice(1, 4).join(',').toUpperCase();
+		} else {
+			key = id[1].toString();
+		}
+
+		return MIDI_MANUFACTURERS[key] || 'Unknown Manufacturer';
+	}
 }
 
 export function getModel(manufacturer: string, id: ModelId): string {
-	let key: string;
-	if (manufacturer == 'Dreadbox P.C.') {
-		key = id.slice(0, 2).join(',');
-	} else {
-		return 'Unknown manufacturer';
-	}
+	const key: string = id.slice(0, 2).join(',').toUpperCase();
 
-	return DREADBOX_DEVICES[key] || 'Unknown device';
+	return MIDI_MODELS[manufacturer][key] || 'Unknown Model';
 }
 
-const DREADBOX_DEVICES: Record<string, string> = {
-	'00,09': 'Artemis'
+export function getInfo(data: Uint8Array): [string, string] {
+	const manufacturer = getManufacturer(data);
+	const start = data[1] == 0 ? 4 : 2;
+	const modelId = Array.from(data.slice(start, start + 2)).map((v) =>
+		v.toString(16).padStart(2, '0').toUpperCase()
+	);
+	const model = getModel(manufacturer, modelId);
+	return [manufacturer, model];
+}
+
+const MIDI_MODELS: Record<string, Record<string, string>> = {
+	'Dreadbox P.C.': {
+		'00,06': 'Nymphes',
+		'00,09': 'Artemis'
+	},
+	'Elektron ESI AB': {
+		'11,00': 'Model:Cycles',
+		'0F,00': 'Model:Samples',
+		'05,00': 'Oktatrack'
+	}
 };
 
 const MIDI_MANUFACTURERS: Record<string, string> = {

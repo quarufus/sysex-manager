@@ -10,3 +10,4 @@ export { default as Dialog } from './ui/Dialog.svelte';
 export { default as Orderable } from './ui/Orderable.svelte';
 export { default as Handle } from './icons/Handle.svelte';
 export { default as FileJson } from './icons/FileJson.svelte';
+export { default as Edit } from './icons/Edit.svelte';

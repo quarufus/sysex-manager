@@ -6,10 +6,11 @@
 	import { type Message } from '$lib/types';
 	import * as Table from '$lib/components/ui/table/index';
 	import * as Dialog from '$lib/components/ui/dialog/index';
-	import { FileJson } from '$lib';
+	import { Edit } from '$lib';
 	import { Button } from '$lib/components/ui/button/index';
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import { dndState } from '@thisux/sveltednd';
+	import { displayAlert } from '$lib/stores/alert';
 
 	let { items = $bindable() }: { items: Message[] } = $props();
 	let open: boolean = $state(false);
@@ -36,6 +37,8 @@
 		},
 		onDrop: (state: DragDropState<Message>) => {
 			if (dndState.invalidDrop) {
+				displayAlert('Error: first message must be a Bank Backup message.');
+				//alert('Error: first message must be a Bank Backup message');
 				return;
 			}
 
@@ -54,12 +57,41 @@
 
 	function parseCmd(data: string[]): string {
 		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-		return parsed.slice(8, 18) == 'BankBackup' ? 'Bank Backup' : 'Preset Backup';
+		if (parsed.slice(8, 18) == 'BankBackup') {
+			return 'Bank Backup';
+		}
+		try {
+			if (JSON.parse(parsed.slice(6, -1)).base) {
+				return 'Preset Backup';
+			}
+		} catch (e) {
+			console.error(e);
+		}
+		return 'Unknown Command';
+		//return parsed.slice(8, 18) == 'BankBackup' ? 'Bank Backup' : 'Preset Backup';
 	}
 
-	function getName(data: string[]): string {
+	function getName(data: string[], bp: string): string {
 		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-		return parsed.slice(8, 18) == 'BankBackup' ? '-' : parsed.slice(15, 17);
+		try {
+			const obj = JSON.parse(parsed.slice(6, -1));
+			if (obj.name) {
+				return obj.name;
+			} else {
+				return bp;
+			}
+		} catch (e) {
+			console.error(e);
+		}
+		return '-';
+	}
+
+	function getPreset(prev: string, index: number): string {
+		if (prev.length > 1) {
+			prev = prev.substring(0, 1) + index.toString();
+			//return prev.substring(0, 1) + index.toString();
+		}
+		return prev;
 	}
 
 	function toggleDialog() {
@@ -81,11 +113,12 @@
 		<Table.Row>
 			<Table.Head>#</Table.Head>
 			<Table.Head>Manufacturer</Table.Head>
-			<Table.Head>Model Id</Table.Head>
+			<Table.Head>Model</Table.Head>
 			<Table.Head>B/P</Table.Head>
 			<Table.Head>Name</Table.Head>
 			<Table.Head>Command</Table.Head>
 			<Table.Head>Length</Table.Head>
+			<Table.Head class="w-16"></Table.Head>
 		</Table.Row>
 	</Table.Header>
 	<Table.Body>
@@ -109,8 +142,8 @@
 				<Table.Cell>{index}</Table.Cell>
 				<Table.Cell>{item.manufacturer}</Table.Cell>
 				<Table.Cell>{item.model}</Table.Cell>
-				<Table.Cell>{item.bankpreset}</Table.Cell>
-				<Table.Cell>{getName(item.data)}</Table.Cell>
+				<Table.Cell>{getPreset(item.bankpreset, index)}</Table.Cell>
+				<Table.Cell>{getName(item.data, item.bankpreset)}</Table.Cell>
 				<Table.Cell>{parseCmd(item.data)}</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
 				<Table.Cell
@@ -120,7 +153,7 @@
 							content.raw = item.raw;
 							content.json = json(item.data);
 							toggleDialog();
-						}}><FileJson /></Button
+						}}><Edit /></Button
 					></Table.Cell
 				>
 			</tr>
