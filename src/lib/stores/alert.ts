@@ -3,7 +3,8 @@ import { writable } from 'svelte/store';
 export enum AlertType {
 	WARN,
 	INFO,
-	SUCCESS
+	SUCCESS,
+	ERROR
 }
 
 //Object.freeze(this);

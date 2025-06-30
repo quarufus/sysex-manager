@@ -16,7 +16,7 @@
 	import { BankBackup } from '$lib/schema';
 	import { z } from 'zod';
 	import { default as MyAlert } from '$lib/ui/Alert.svelte';
-	import { displayAlert } from '$lib/stores/alert';
+	import { AlertType, displayAlert } from '$lib/stores/alert';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -240,9 +240,9 @@
 			console.log(BankBackup.parse(parsed));
 		} catch (error) {
 			if (error instanceof z.ZodError) {
-				displayAlert('Error', error.errors[0].message);
+				displayAlert('Error', error.errors[0].message, AlertType.ERROR);
 			} else {
-				displayAlert('Error', error?.toString());
+				displayAlert('Error', error?.toString(), AlertType.ERROR);
 			}
 		}
 	}

@@ -10,7 +10,7 @@
 	import { Button } from '$lib/components/ui/button/index';
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import { dndState } from '@thisux/sveltednd';
-	import { displayAlert } from '$lib/stores/alert';
+	import { AlertType, displayAlert } from '$lib/stores/alert';
 
 	let { items = $bindable() }: { items: Message[] } = $props();
 	let open: boolean = $state(false);
@@ -37,7 +37,7 @@
 		},
 		onDrop: (state: DragDropState<Message>) => {
 			if (dndState.invalidDrop) {
-				displayAlert('Error: first message must be a Bank Backup message.');
+				displayAlert('Warning', 'First message must be a Bank Backup message.', AlertType.WARN);
 				//alert('Error: first message must be a Bank Backup message');
 				return;
 			}
