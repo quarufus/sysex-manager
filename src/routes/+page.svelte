@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Filters, Message } from '$lib';
-	import { getInfo, getManufacturer, toggleThemeValues } from '$lib';
+	import { getInfo, getManufacturer } from '$lib';
 	import { Settings, Circle, Orderable } from '$lib';
 	import * as Select from '$lib/components/ui/select/index';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index';
@@ -17,6 +17,7 @@
 	import { z } from 'zod';
 	import { default as MyAlert } from '$lib/ui/Alert.svelte';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
+	import { toggleMode } from 'mode-watcher';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -123,11 +124,12 @@
 			} else {
 				bankpresetIn.preset++;
 			}
-			const end = s[1] == '00' ? 4 : 2;
+			console.log(l);
+			const [manufacturer, model] = getInfo(l);
 			messages.push({
 				id: idx,
-				manufacturer: getManufacturer(s.slice(1, end)),
-				model: s.slice(end, end + 2).join(' '),
+				manufacturer: manufacturer,
+				model: model,
 				bankpreset: `${bankpresetIn.bank}${bankpresetIn.preset > 0 ? bankpresetIn.preset.toString() : ''}`,
 				name: '',
 				data: s,
@@ -279,13 +281,6 @@
 		};
 	}
 
-	function changeTheme() {
-		dark = !dark;
-		document.documentElement.classList.toggle('dark', dark);
-		localStorage.theme = dark ? 'dark' : '';
-		toggleThemeValues(dark);
-	}
-
 	const scrollToBottom = (node: HTMLDivElement) => {
 		if (node.scrollHeight) {
 			node.scrollTop = node.scrollHeight;
@@ -334,12 +329,7 @@
 			</Dialog.Content>
 		</Dialog.Root>
 
-		<button
-			class="size-6 px-0"
-			onclick={() => {
-				changeTheme();
-			}}
-		>
+		<button class="size-6 px-0" onclick={toggleMode}>
 			<Circle class={dark ? 'hover:fill-background' : 'fill-background hover:fill-foreground'} />
 		</button>
 	</div>

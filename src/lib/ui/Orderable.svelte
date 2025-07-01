@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { bytesToString, cn, downloadMessage } from '$lib/utils';
+	import { cn, downloadMessage } from '$lib/utils';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { flip } from 'svelte/animate';
 	import { fade } from 'svelte/transition';
@@ -11,10 +11,16 @@
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import { dndState } from '@thisux/sveltednd';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
+	import TreeNode from './TreeNode.svelte';
+	import { PresetParameters } from '$lib/schema';
 
 	let { items = $bindable() }: { items: Message[] } = $props();
 	let open: boolean = $state(false);
-	const content: { raw: Uint8Array; json: string } = $state({ raw: new Uint8Array(), json: '' });
+	const content: { raw: Uint8Array; data: string[]; json: string } = $state({
+		raw: new Uint8Array(),
+		data: [],
+		json: ''
+	});
 
 	function formatSize(size: number): string {
 		if (size / 1000 > 1) {
@@ -106,6 +112,15 @@
 			return parsed;
 		}
 	}
+
+	function obj(data: string[]) {
+		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
+		try {
+			return JSON.parse(parsed.slice(6, -1));
+		} catch (e) {
+			console.error(e);
+		}
+	}
 </script>
 
 <Table.Root>
@@ -151,6 +166,7 @@
 						variant="outline"
 						onclick={() => {
 							content.raw = item.raw;
+							content.data = item.data;
 							content.json = json(item.data);
 							toggleDialog();
 						}}><Edit /></Button
@@ -166,14 +182,17 @@
 		<Dialog.Header>
 			<Dialog.Title>Inspect SysEx Message</Dialog.Title>
 		</Dialog.Header>
-		<ScrollArea class="h-[80vh] font-mono">
-			<div class="grid grid-cols-2">
-				<div class="wrap-anywhere">
+		<div class="grid grid-cols-2">
+			<!--<div class="wrap-anywhere">
 					{bytesToString(content.raw)}
-				</div>
+				</div>-->
+			<ScrollArea class="h-[80vh] font-mono">
+				<TreeNode schema={PresetParameters} path={[]} value={obj(content.data)} />
+			</ScrollArea>
+			<ScrollArea class="h-[80vh] font-mono">
 				<pre class="wrap-anywhere">{content.json}</pre>
-			</div>
-		</ScrollArea>
+			</ScrollArea>
+		</div>
 		<Dialog.Footer>
 			<Button
 				onclick={() => {

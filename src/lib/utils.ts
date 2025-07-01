@@ -68,21 +68,6 @@ export function downloadMessage(msg: Uint8Array) {
 	window.URL.revokeObjectURL(url);
 }
 
-export function toggleThemeValues(dark: boolean) {
-	const style = document.documentElement.style;
-	if (dark) {
-		// style.setProperty('--bg', 'oklch(0.2157 0.0075 99.62)');
-		style.setProperty('--bg', 'oklch(0.1 0 0)');
-		style.setProperty('--fg', 'oklch(0.8546 0.0176 99.62)');
-		style.setProperty('--shade', 'oklch(0.3086 0.0176 99.62)');
-	} else {
-		style.setProperty('--bg', 'oklch(0.8986 0.0176 99.62)');
-		style.setProperty('--fg', 'oklch(0.1667 0.0163 102.15)');
-		style.setProperty('--shade', 'oklch(0.7893 0.0176 99.62)');
-	}
-	style.setProperty('--accent', 'oklch(0.7062 0.1469 77.98)');
-}
-
 export function bytesToString(bytes: Uint8Array): string {
 	return Array.from(bytes)
 		.map((b) => b.toString(16).padStart(2, '0').toUpperCase())

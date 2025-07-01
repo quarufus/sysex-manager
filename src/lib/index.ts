@@ -6,6 +6,7 @@ export { default as Select } from './ui/Select.svelte';
 export { default as Settings } from './icons/Settings.svelte';
 export { default as Circle } from './icons/Circle.svelte';
 export { default as ChevronDown } from './icons/ChevronDown.svelte';
+export { default as ChevronRight } from './icons/ChevronRight.svelte';
 export { default as Dialog } from './ui/Dialog.svelte';
 export { default as Orderable } from './ui/Orderable.svelte';
 export { default as Handle } from './icons/Handle.svelte';
