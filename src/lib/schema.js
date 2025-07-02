@@ -257,8 +257,6 @@ export const PresetParameters = z.object({
 
 export const Bank = z.object({ BankBackup: z.number() });
 
-export const ArtemisMessage = z.union([Bank, PresetParameters]);
-
 export const BankBackup = z
 	.tuple([Bank])
 	.rest(PresetParameters)
@@ -269,3 +267,7 @@ export const BankBackup = z
 		bank: bank.BankBackup,
 		presets: presets
 	}));
+
+export const PresetBackup = z.tuple([z.literal('PresetBackup'), PresetParameters]);
+
+export const ArtemisMessage = z.union([BankBackup, PresetBackup]);

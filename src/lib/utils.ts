@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { Message } from './types';
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -54,10 +55,12 @@ export function messageStatus(message: MIDIMessageEvent): string {
 }
 
 export function downloadMessage(msg: Uint8Array) {
-	const binary = [];
+	let binary = [];
 	for (let i = 0; i < msg.length; i++) {
 		binary[i] = parseInt(msg[i].toString(16), 16);
 	}
+	const cmd = [34, 80, 114, 101, 115, 101, 116, 66, 97, 99, 107, 117, 112, 34];
+	binary = [...binary.slice(0, 6), ...cmd, 247, ...binary];
 	const byteArray = new Uint8Array(binary);
 	const blob = new Blob([byteArray], { type: 'application/octet-stream' });
 	const url = URL.createObjectURL(blob);
@@ -68,8 +71,23 @@ export function downloadMessage(msg: Uint8Array) {
 	window.URL.revokeObjectURL(url);
 }
 
-export function bytesToString(bytes: Uint8Array): string {
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, '0').toUpperCase())
-		.join(' ');
+export function bytesToString(bytes: Uint8Array): string[] {
+	return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0').toUpperCase());
+}
+
+export function downloadBank(messages: Message[]) {
+	if (messages.length == 0) {
+		return;
+	}
+	const binary: number[] = [];
+	messages.forEach((m) => binary.push(...m.raw));
+	console.log(binary);
+	const byteArray = new Uint8Array(binary);
+	const blob = new Blob([byteArray], { type: 'application/octet-stream' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.download = 'data.syx';
+	a.href = url;
+	a.click();
+	window.URL.revokeObjectURL(url);
 }

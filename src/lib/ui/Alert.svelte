@@ -21,7 +21,7 @@
 		}}
 	>
 		<AlertDialog.Header class={color}>{$alertTitle}</AlertDialog.Header>
-		{$alertDescription}
+		<div class="whitespace-pre-line">{$alertDescription}</div>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel
 				onclick={() => {

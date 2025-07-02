@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Filters, Message } from '$lib';
-	import { getInfo, getManufacturer } from '$lib';
+	import { downloadBank, getInfo, getManufacturer } from '$lib';
 	import { Settings, Circle, Orderable } from '$lib';
 	import * as Select from '$lib/components/ui/select/index';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index';
@@ -13,11 +13,12 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index';
 	import * as Table from '$lib/components/ui/table/index';
 	import Load from '$lib/icons/Load.svelte';
-	import { BankBackup } from '$lib/schema';
-	import { z } from 'zod';
+	import { ArtemisMessage } from '$lib/schema';
 	import { default as MyAlert } from '$lib/ui/Alert.svelte';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
 	import { toggleMode } from 'mode-watcher';
+	import Icon from '@iconify/svelte';
+	import z from 'zod/v4';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -151,6 +152,24 @@
 			return;
 		}
 
+		const parsed = outgoingMessages.map((m) => {
+			const text = m.data
+				.map((v: string) => String.fromCharCode(parseInt(v, 16)))
+				.join('')
+				.slice(6, -1);
+			return JSON.parse(text);
+		});
+
+		const result = ArtemisMessage.safeParse(parsed);
+
+		if (result.error) {
+			const tree = z.treeifyError(result.error);
+			console.log(tree);
+			const errors = tree.errors;
+			displayAlert('Error', errors.join('\n'), AlertType.ERROR);
+			return;
+		}
+
 		sendStatus = 'Sending';
 
 		//const now = performance.now();
@@ -230,23 +249,6 @@
 			});
 			idx++;
 		});
-
-		const parsed = outgoingMessages.map((m) => {
-			const text = m.data
-				.map((v: string) => String.fromCharCode(parseInt(v, 16)))
-				.join('')
-				.slice(6, -1);
-			return JSON.parse(text);
-		});
-		try {
-			console.log(BankBackup.parse(parsed));
-		} catch (error) {
-			if (error instanceof z.ZodError) {
-				displayAlert('Error', error.errors[0].message, AlertType.ERROR);
-			} else {
-				displayAlert('Error', error?.toString(), AlertType.ERROR);
-			}
-		}
 	}
 
 	function splitSysExData(data: Uint8Array) {
@@ -338,34 +340,48 @@
 <br />
 <div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto] gap-8">
 	<div class="flex items-end justify-between">
-		<div class="grid w-full max-w-sm items-center gap-1.5">
-			<label for="file">Open File</label>
-			<Input id="file" type="file" bind:files onchange={loadFile} />
-		</div>
-		<Dialog.Root>
-			<Dialog.Trigger class={buttonVariants({ variant: 'default' })}>Create Command</Dialog.Trigger>
-			<Dialog.Content>
-				<Dialog.Header>
-					<Dialog.Title>Create Command</Dialog.Title>
-					<Dialog.Description
-						>Create custom sysex commands to send to your device.</Dialog.Description
-					>
-				</Dialog.Header>
-				<Textarea placeholder="Type your command here." bind:value={customCmd} />
-				<Dialog.Footer>
-					<Dialog.Close>
-						<Button
-							type="submit"
-							onclick={() => {
-								outgoingMessages.push(
-									parseMessage(Uint8Array.from(customCmd.split(' ').map((v) => parseInt(v, 16))))
-								);
-							}}>Add command</Button
+		<div class="flex items-end gap-4">
+			<div class="grid w-full max-w-sm items-center gap-1.5">
+				<label for="file">Open File</label>
+				<Input id="file" type="file" accept=".syx" bind:files onchange={loadFile} />
+			</div>
+			<Dialog.Root>
+				<Dialog.Trigger class={buttonVariants({ variant: 'default' })}
+					>Create Command</Dialog.Trigger
+				>
+				<Dialog.Content>
+					<Dialog.Header>
+						<Dialog.Title>Create Command</Dialog.Title>
+						<Dialog.Description
+							>Create custom sysex commands to send to your device.</Dialog.Description
 						>
-					</Dialog.Close>
-				</Dialog.Footer>
-			</Dialog.Content>
-		</Dialog.Root>
+					</Dialog.Header>
+					<Textarea placeholder="Type your command here." bind:value={customCmd} />
+					<Dialog.Footer>
+						<Dialog.Close>
+							<Button
+								type="submit"
+								onclick={() => {
+									outgoingMessages.push(
+										parseMessage(Uint8Array.from(customCmd.split(' ').map((v) => parseInt(v, 16))))
+									);
+								}}>Add command</Button
+							>
+						</Dialog.Close>
+					</Dialog.Footer>
+				</Dialog.Content>
+			</Dialog.Root>
+			<Button
+				onclick={() => {
+					downloadBank(outgoingMessages);
+				}}><Icon icon="lucide:download" width="24" height="24" /></Button
+			>
+			<Button
+				onclick={() => {
+					outgoingMessages = [];
+				}}>Clear</Button
+			>
+		</div>
 		<Button
 			disabled={sendStatus == 'Sending'}
 			class="hover:bg-text hover:text-background"

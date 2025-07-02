@@ -61,21 +61,30 @@
 		}
 	};
 
-	function parseCmd(data: string[]): string {
-		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-		if (parsed.slice(8, 18) == 'BankBackup') {
-			return 'Bank Backup';
-		}
-		try {
-			if (JSON.parse(parsed.slice(6, -1)).base) {
+	const command = $derived(
+		(function () {
+			if (items.length == 0) return '';
+			const s = items[0].data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
+			if (s.slice(8, 18) == 'BankBackup') {
+				const bank = String.fromCharCode(parseInt(s.slice(20, 21) + String(65)));
+				return `Bank ${bank} Backup`;
+			} else if (s.slice(7, 19) == 'PresetBackup') {
 				return 'Preset Backup';
 			}
-		} catch (e) {
-			console.error(e);
+			return 'Unknown Command';
+		})()
+	);
+
+	const messageId = (prev: string, index: number) => {
+		switch (true) {
+			case /Bank*/.test(command):
+				return getPreset(prev, index) + ' Preset';
+			case command == 'Preset Backup':
+				return 'Active Preset';
+			case command == 'Unknown Command':
+				return 'Unknown Command';
 		}
-		return 'Unknown Command';
-		//return parsed.slice(8, 18) == 'BankBackup' ? 'Bank Backup' : 'Preset Backup';
-	}
+	};
 
 	function getName(data: string[], bp: string): string {
 		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
@@ -123,13 +132,13 @@
 	}
 </script>
 
-<Table.Root>
+<Table.Root class="font-mono">
 	<Table.Header>
 		<Table.Row>
 			<Table.Head>#</Table.Head>
 			<Table.Head>Manufacturer</Table.Head>
 			<Table.Head>Model</Table.Head>
-			<Table.Head>B/P</Table.Head>
+			<!--<Table.Head>B/P</Table.Head>-->
 			<Table.Head>Name</Table.Head>
 			<Table.Head>Command</Table.Head>
 			<Table.Head>Length</Table.Head>
@@ -157,9 +166,9 @@
 				<Table.Cell>{index}</Table.Cell>
 				<Table.Cell>{item.manufacturer}</Table.Cell>
 				<Table.Cell>{item.model}</Table.Cell>
-				<Table.Cell>{getPreset(item.bankpreset, index)}</Table.Cell>
+				<!--<Table.Cell>{getPreset(item.bankpreset, index)}</Table.Cell>-->
 				<Table.Cell>{getName(item.data, item.bankpreset)}</Table.Cell>
-				<Table.Cell>{parseCmd(item.data)}</Table.Cell>
+				<Table.Cell>{index == 0 ? command : messageId(item.bankpreset, index)}</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
 				<Table.Cell
 					><Button
