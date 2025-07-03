@@ -255,12 +255,12 @@ export const PresetParameters = z.object({
 	aftertouch: ModulationCoefficients
 });
 
-export const Bank = z.object({ BankBackup: z.number() });
+export const Bank = z.object({ BankBackup: z.number().min(0).max(7) });
 
 export const BankBackup = z
 	.tuple([Bank])
-	.rest(PresetParameters)
-	.refine((arr) => arr.length == 64, {
+	.rest(z.any())
+	.refine((arr) => arr.length == 65, {
 		error: 'Expected 1 bank and 64 presets (65 items total)'
 	})
 	.transform(([bank, ...presets]) => ({
@@ -268,6 +268,6 @@ export const BankBackup = z
 		presets: presets
 	}));
 
-export const PresetBackup = z.tuple([z.literal('PresetBackup'), PresetParameters]);
+export const PresetBackup = z.tuple([z.literal('PresetBackup'), z.any()]);
 
 export const ArtemisMessage = z.union([BankBackup, PresetBackup]);

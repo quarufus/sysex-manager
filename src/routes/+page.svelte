@@ -164,7 +164,7 @@
 
 		if (result.error) {
 			const tree = z.treeifyError(result.error);
-			console.log(tree);
+			console.log(result.error.issues);
 			const errors = tree.errors;
 			displayAlert('Error', errors.join('\n'), AlertType.ERROR);
 			return;
@@ -225,6 +225,10 @@
 		const buffer = await files[0].arrayBuffer();
 		const bytes = new Uint8Array(buffer);
 		outgoingMessages = [];
+		if (bytes[0] != 240 || bytes[bytes.length - 1] != 247) {
+			displayAlert('Warning', 'File does not contain SysEx messages', AlertType.WARN);
+			return;
+		}
 		const lines = splitSysExData(bytes);
 		let bank = '';
 		let preset = 0;

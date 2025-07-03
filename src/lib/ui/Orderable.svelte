@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn, downloadMessage } from '$lib/utils';
+	import { cn, downloadMessage, bytesToString } from '$lib/utils';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { flip } from 'svelte/animate';
 	import { fade } from 'svelte/transition';
@@ -12,15 +12,43 @@
 	import { dndState } from '@thisux/sveltednd';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
 	import TreeNode from './TreeNode.svelte';
-	import { PresetParameters } from '$lib/schema';
+	import { Bank, PresetBackup, PresetParameters } from '$lib/schema';
+	import { type $ZodIssue } from 'zod/v4/core';
 
 	let { items = $bindable() }: { items: Message[] } = $props();
 	let open: boolean = $state(false);
-	const content: { raw: Uint8Array; data: string[]; json: string } = $state({
+	const content: {
+		raw: Uint8Array;
+		data: string[];
+		json: string;
+		index: number;
+	} = $state({
 		raw: new Uint8Array(),
 		data: [],
-		json: ''
+		json: '',
+		index: 0
 	});
+
+	let raw: boolean = $state(false);
+
+	let data = $state({});
+	let validationErrors: $ZodIssue[] = $state([]);
+
+	function updateChange(path: string[], value: any) {
+		const newData = JSON.parse(JSON.stringify(data));
+
+		let current = newData;
+		for (let i = 0; i < path.length - 1; i++) {
+			current = current[path[i]];
+		}
+
+		current[path[path.length - 1]] = value;
+
+		data = newData;
+
+		const result = PresetParameters.safeParse(data);
+		validationErrors = result.error?.issues ?? [];
+	}
 
 	function formatSize(size: number): string {
 		if (size / 1000 > 1) {
@@ -174,9 +202,11 @@
 					><Button
 						variant="outline"
 						onclick={() => {
+							data = obj(item.data);
 							content.raw = item.raw;
 							content.data = item.data;
 							content.json = json(item.data);
+							content.index = index;
 							toggleDialog();
 						}}><Edit /></Button
 					></Table.Cell
@@ -196,18 +226,39 @@
 					{bytesToString(content.raw)}
 				</div>-->
 			<ScrollArea class="h-[80vh] font-mono">
-				<TreeNode schema={PresetParameters} path={[]} value={obj(content.data)} />
+				<TreeNode
+					schema={content.index == 0
+						? /Bank*/.test(command)
+							? Bank
+							: PresetBackup
+						: PresetParameters}
+					path={[]}
+					value={obj(content.data)}
+					{validationErrors}
+					updateData={updateChange}
+				/>
 			</ScrollArea>
 			<ScrollArea class="h-[80vh] font-mono">
-				<pre class="wrap-anywhere">{content.json}</pre>
+				{#if raw}
+					<div class="">{bytesToString(content.raw).join(' ')}</div>
+				{:else}
+					<pre class="wrap-anywhere">{content.json}</pre>
+				{/if}
 			</ScrollArea>
 		</div>
 		<Dialog.Footer>
+			<Button
+				disabled={validationErrors.length != 0}
+				onclick={() => {
+					content.json = JSON.stringify(data, null, '\t');
+				}}>Save</Button
+			>
 			<Button
 				onclick={() => {
 					downloadMessage(content.raw);
 				}}>Download syx file</Button
 			>
+			<Button onclick={() => (raw = !raw)}>View Raw</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
