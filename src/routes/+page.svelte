@@ -19,6 +19,7 @@
 	import { toggleMode } from 'mode-watcher';
 	import Icon from '@iconify/svelte';
 	import z from 'zod/v4';
+	import { bytesToString } from '$lib';
 
 	let selectedInput: string = $state('');
 	let selectedOutput: string = $state('');
@@ -125,7 +126,6 @@
 			} else {
 				bankpresetIn.preset++;
 			}
-			console.log(l);
 			const [manufacturer, model] = getInfo(l);
 			messages.push({
 				id: idx,
@@ -157,7 +157,11 @@
 				.map((v: string) => String.fromCharCode(parseInt(v, 16)))
 				.join('')
 				.slice(6, -1);
-			return JSON.parse(text);
+			try {
+				return JSON.parse(text);
+			} catch (e) {
+				console.error(e);
+			}
 		});
 
 		const result = ArtemisMessage.safeParse(parsed);
@@ -167,7 +171,6 @@
 			console.log(result.error.issues);
 			const errors = tree.errors;
 			displayAlert('Error', errors.join('\n'), AlertType.ERROR);
-			return;
 		}
 
 		sendStatus = 'Sending';
@@ -342,9 +345,11 @@
 </div>
 <br />
 <br />
-<div class="m-4 my-2.5 grid h-[80vh] grid-cols-2 grid-rows-[min-content_auto] gap-8">
+<div
+	class="my-2.5 grid h-[80vh] w-full grid-cols-[1fr_38.2%] grid-rows-[min-content_auto] gap-8 p-4"
+>
 	<div class="flex items-end justify-between">
-		<div class="flex items-end gap-4">
+		<div class="flex items-end gap-2">
 			<div class="grid w-full max-w-sm items-center gap-1.5">
 				<label for="file">Open File</label>
 				<Input id="file" type="file" accept=".syx" bind:files onchange={loadFile} />
@@ -424,16 +429,17 @@
 		bind:this={element}
 	>
 		<ScrollArea class="h-full">
-			<Table.Root>
+			<Table.Root class="font-mono">
 				<Table.Header>
 					<Table.Row>
 						<Table.Head>#</Table.Head>
 						<Table.Head>Manufacturer</Table.Head>
 						<Table.Head>Model</Table.Head>
-						<Table.Head>B/P</Table.Head>
-						<Table.Head>Name</Table.Head>
-						<Table.Head>Command</Table.Head>
+						<!--<Table.Head>B/P</Table.Head>-->
+						<!--<Table.Head>Name</Table.Head>-->
+						<Table.Head>Content</Table.Head>
 						<Table.Head>Length</Table.Head>
+						<Table.Head></Table.Head>
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
@@ -442,10 +448,33 @@
 							<Table.Cell>{index}</Table.Cell>
 							<Table.Cell>{item.manufacturer}</Table.Cell>
 							<Table.Cell>{item.model}</Table.Cell>
-							<Table.Cell>{item.bankpreset}</Table.Cell>
-							<Table.Cell>{item.name}</Table.Cell>
-							<Table.Cell>{item.data.slice(0, 10)}</Table.Cell>
+							<!--<Table.Cell>{item.bankpreset}</Table.Cell>
+							<Table.Cell>{item.name}</Table.Cell>-->
+							<Table.Cell>{bytesToString(item.raw.slice(0, 3)).join(' ') + '...'}</Table.Cell>
 							<Table.Cell class="text-right font-mono">{item.raw.length}</Table.Cell>
+							<Table.Cell>
+								<Dialog.Root>
+									<Dialog.Trigger
+										><Button variant="outline"><Icon icon="lucide:inspect" /></Button
+										></Dialog.Trigger
+									>
+									<Dialog.Content class="lg:max-w-[70vw]">
+										<Dialog.Header>
+											<Dialog.Title>Inspect MIDI message</Dialog.Title>
+										</Dialog.Header>
+										<ScrollArea class="h-[50vh] font-mono"
+											><div class="wrap-anywhere">
+												{bytesToString(item.raw).join(' ')}
+											</div></ScrollArea
+										>
+										<Dialog.Footer>
+											<Dialog.Close>
+												<Button type="submit">Close</Button>
+											</Dialog.Close>
+										</Dialog.Footer>
+									</Dialog.Content>
+								</Dialog.Root></Table.Cell
+							>
 						</Table.Row>
 					{/each}
 				</Table.Body>
