@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import type { Filters, Message } from '$lib';
 	import { downloadBank, getInfo, getManufacturer } from '$lib';
 	import { Settings, Circle, Orderable } from '$lib';
@@ -13,12 +13,11 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index';
 	import * as Table from '$lib/components/ui/table/index';
 	import Load from '$lib/icons/Load.svelte';
-	import { ArtemisMessage } from '$lib/schema';
+	import { BankBackup, PresetBackup } from '$lib/schema';
 	import { default as MyAlert } from '$lib/ui/Alert.svelte';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
 	import { toggleMode } from 'mode-watcher';
 	import Icon from '@iconify/svelte';
-	import z from 'zod/v4';
 	import { bytesToString } from '$lib';
 
 	let selectedInput: string = $state('');
@@ -37,6 +36,7 @@
 		midiInputs.find((d) => d.id === selectedInput)?.name ?? 'Choose MIDI in device'
 	);
 	let sendStatus: string = $state('Send');
+	let loading: boolean = $state(false);
 
 	const filters: Filters = $state({
 		clock: false,
@@ -152,25 +152,33 @@
 			return;
 		}
 
-		const parsed = outgoingMessages.map((m) => {
-			const text = m.data
+		const strings: string[] = outgoingMessages.map((m: Message) =>
+			m.data
 				.map((v: string) => String.fromCharCode(parseInt(v, 16)))
 				.join('')
-				.slice(6, -1);
+				.slice(6, -1)
+		);
+
+		const objects = strings.map((s) => {
 			try {
-				return JSON.parse(text);
+				return JSON.parse(s);
 			} catch (e) {
 				console.error(e);
 			}
 		});
 
-		const result = ArtemisMessage.safeParse(parsed);
+		let result;
+		if (strings[0].includes('BankBackup')) {
+			result = BankBackup.safeParse(objects);
+		} else if (strings[0].includes('PresetBackup')) {
+			result = PresetBackup.safeParse(objects);
+		}
 
-		if (result.error) {
-			const tree = z.treeifyError(result.error);
-			console.log(result.error.issues);
-			const errors = tree.errors;
-			displayAlert('Error', errors.join('\n'), AlertType.ERROR);
+		if (result?.error) {
+			//const tree = z.treeifyError(result.error);
+			console.error(result.error.issues);
+			//const errors = tree.errors;
+			//displayAlert('Error', errors.join('\n'), AlertType.ERROR);
 		}
 
 		sendStatus = 'Sending';
@@ -221,40 +229,66 @@
 		}
 	});
 
-	async function loadFile() {
-		if (!files) {
-			return;
-		}
-		const buffer = await files[0].arrayBuffer();
-		const bytes = new Uint8Array(buffer);
+	async function loadFile(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
 		outgoingMessages = [];
-		if (bytes[0] != 240 || bytes[bytes.length - 1] != 247) {
-			displayAlert('Warning', 'File does not contain SysEx messages', AlertType.WARN);
-			return;
-		}
-		const lines = splitSysExData(bytes);
 		let bank = '';
 		let preset = 0;
-		lines.forEach((l) => {
-			const s = Array.from(l).map((v) => v.toString(16).padStart(2, '0'));
-			const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-			if (text.substring(8, 18) == 'BankBackup') {
-				bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
-				preset = 0;
-			} else {
-				preset++;
+		loading = true;
+		await tick();
+
+		try {
+			const content = await readFile(file);
+			const bytes = new Uint8Array(content);
+			if (bytes[0] != 240 || bytes[bytes.length - 1] != 247) {
+				displayAlert('Warning', 'File does not contain SysEx messages', AlertType.WARN);
+				return;
 			}
-			const [manufacturer, model] = getInfo(l);
-			outgoingMessages.push({
-				id: idx + 1000,
-				manufacturer: manufacturer,
-				model: model,
-				name: text.substring(15, 18),
-				bankpreset: `${bank}${preset ? preset.toString() : ''}`,
-				data: s,
-				raw: l
+			const lines = splitSysExData(bytes);
+			lines.forEach((l) => {
+				const s = Array.from(l).map((v) => v.toString(16).padStart(2, '0'));
+				const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
+				if (text.substring(8, 18) == 'BankBackup') {
+					bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
+					preset = 0;
+				} else {
+					preset++;
+				}
+				const [manufacturer, model] = getInfo(l);
+				outgoingMessages.push({
+					id: idx + 1000,
+					manufacturer: manufacturer,
+					model: model,
+					name: text.substring(15, 18),
+					bankpreset: `${bank}${preset ? preset.toString() : ''}`,
+					data: s,
+					raw: l
+				});
+				idx++;
 			});
-			idx++;
+		} catch (error) {
+			console.error('Error loading file:', error);
+			loading = false;
+		} finally {
+			loading = false;
+		}
+	}
+
+	function readFile(file: File): Promise<ArrayBuffer> {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+
+			reader.onload = () => {
+				resolve(reader.result as ArrayBuffer);
+			};
+			reader.onerror = () => {
+				const reason = reader.error ?? new Error('Unknown FileReader error');
+				reject(reason instanceof Error ? reason : new Error(String(reason)));
+			};
+
+			reader.readAsArrayBuffer(file);
 		});
 	}
 
@@ -419,9 +453,15 @@
 		>
 	</div>
 	<div class="border-shade view overflow-auto rounded-sm border">
-		<ScrollArea class="h-full">
-			<Orderable items={outgoingMessages} />
-		</ScrollArea>
+		{#if loading}
+			<div class="flex h-full w-full items-center justify-center">
+				<Icon icon="lucide:loader-circle" class="size-16 animate-spin" />
+			</div>
+		{:else}
+			<ScrollArea class="h-full">
+				<Orderable items={outgoingMessages} />
+			</ScrollArea>
+		{/if}
 	</div>
 	<div
 		class="win border-shade view overflow-auto rounded-sm border text-wrap"

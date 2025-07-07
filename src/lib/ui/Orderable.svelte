@@ -62,7 +62,6 @@
 		const { targetContainer } = state;
 
 		dndState.invalidDrop = targetContainer == '0';
-		console.log(dndState.invalidDrop);
 	}
 
 	const dragDropCallbacks = {
@@ -99,7 +98,7 @@
 			} else if (s.slice(7, 19) == 'PresetBackup') {
 				return 'Preset Backup';
 			}
-			return 'Unknown Command';
+			return 'Unknown SysEx Command';
 		})()
 	);
 
@@ -110,7 +109,7 @@
 			case command == 'Preset Backup':
 				return 'Active Preset';
 			case command == 'Unknown Command':
-				return 'Unknown Command';
+				return 'Unknown SysEx Command';
 		}
 	};
 

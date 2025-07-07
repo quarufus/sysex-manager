@@ -71,7 +71,11 @@
 		/>
 	{:else if schema instanceof z.ZodBoolean}
 		<Checkbox
-			checked={typeof value === 'string' || typeof value === 'number' ? false : value}
+			checked={typeof value === 'string'
+				? parseInt(value) != 0
+				: typeof value === 'number'
+					? value != 0
+					: value}
 			onchange={() => {
 				onChange(value);
 			}}

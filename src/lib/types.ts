@@ -8,6 +8,12 @@ export interface Message {
 	raw: Uint8Array;
 }
 
+export enum Command {
+	BANK_BACKUP,
+	PRESET_BACKUP,
+	UPDATE
+}
+
 export interface Bank {
 	id: number;
 	name: string;
