@@ -23,16 +23,16 @@
 	validationErrors = validationErrors;
 	onChange = onChange;
 
-	function getOptions(schema: z.ZodType) {
+	function getOptions(schema: z.ZodType): string[] {
 		if (schema instanceof z.ZodEnum) {
-			return schema.options;
+			return schema.options.map((v) => v.toString());
 		}
 		if (schema instanceof z.ZodUnion) {
 			return schema.options.map((option) => {
 				if (option instanceof z.ZodLiteral) {
-					return option.value;
+					return option.value ? option.value.toString() : '';
 				}
-				return option;
+				return JSON.stringify(option);
 			});
 		}
 		return [];
@@ -71,22 +71,24 @@
 		/>
 	{:else if schema instanceof z.ZodBoolean}
 		<Checkbox
-			checked={typeof value === 'string'
-				? parseInt(value) != 0
-				: typeof value === 'number'
-					? value != 0
-					: value}
-			onchange={() => {
+			bind:checked={value}
+			onCheckedChange={() => {
 				onChange(value);
 			}}
 		/>
 	{:else if schema instanceof z.ZodEnum || schema._zod.def instanceof z.ZodUnion}
-		<Select.Root type="single" bind:value>
+		<Select.Root
+			type="single"
+			bind:value
+			onValueChange={() => {
+				onChange(value);
+			}}
+		>
 			<Select.Trigger>{value}</Select.Trigger>
 			<Select.Content>
 				<Select.Group>
 					{#each options as option, i (i)}
-						<Select.Item value={JSON.stringify(option)} label={JSON.stringify(option)}>
+						<Select.Item value={option} label={option}>
 							{option}
 						</Select.Item>
 					{/each}

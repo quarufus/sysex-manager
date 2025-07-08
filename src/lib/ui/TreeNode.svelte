@@ -21,19 +21,31 @@
 		updateData: (path: string[], value: any) => void;
 		validationErrors: $ZodIssue[];
 	} = $props();
-	let expanded = $state(false);
+	let expanded: boolean = $state(path.length < 1);
+
+	updateData(path, value);
 
 	function toggle() {
 		expanded = !expanded;
 	}
 
+	function hasError(): boolean {
+		let bool = false;
+		validationErrors.forEach((err) => {
+			const errorPath = err.path.join('');
+			const nodePath = path.join('');
+			if (errorPath.includes(nodePath)) bool = true;
+		});
+		return bool;
+	}
+
 	const isLeaf = !['object', 'array'].includes(schema._zod.def.type);
-	const pathkey = path[path.length - 1] || 'root';
+	const pathkey = path[path.length - 1] || 'Preset';
 </script>
 
 {#if isLeaf}
-	<div class="grid grid-cols-[200px_auto] gap-2 p-2 ml-{path.length * 10}">
-		<Label class="w-64">{pathkey}</Label>
+	<div class="grid grid-cols-[200px_auto] gap-2 p-2 ml-{(path.length - 1) * 10 + 3}">
+		<Label>{pathkey}</Label>
 		<Leaf
 			{schema}
 			{value}
@@ -45,15 +57,21 @@
 		/>
 	</div>
 {:else}
-	<div class="flex gap-2 p-2 ml-{path.length * 10} items-center">
-		<Button onclick={toggle} variant="ghost">
-			{#if expanded}
-				<ChevronDown />
-			{:else}
-				<ChevronRight />
-			{/if}
-		</Button>{pathkey}
-	</div>
+	{#if path.length > 0}
+		<div
+			class="flex gap-2 p-2 ml-{(path.length - 1) * 10} items-center {hasError()
+				? 'text-destructive'
+				: 'lol'}"
+		>
+			<Button onclick={toggle} variant="ghost" class={hasError() ? 'text-destructive' : 'lol'}>
+				{#if expanded}
+					<ChevronDown />
+				{:else}
+					<ChevronRight />
+				{/if}
+			</Button>{pathkey}
+		</div>
+	{/if}
 
 	{#if expanded}
 		{#if schema instanceof z.ZodObject}

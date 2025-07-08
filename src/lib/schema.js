@@ -163,7 +163,7 @@ export const SequencerParameters = z.object({
 	probability: Norm,
 	swing: Norm,
 	gate: Gate,
-	steps: z.array(Step).length(16) // Simplified to 16 steps for demo
+	steps: z.array(Step).max(64) // Simplified to 16 steps for demo
 });
 
 export const SeqParameters = z.object({

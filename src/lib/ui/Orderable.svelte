@@ -33,6 +33,7 @@
 
 	let data = $state({});
 	let validationErrors: $ZodIssue[] = $state([]);
+	const valid: boolean = $derived(validationErrors.length != 0);
 
 	function updateChange(path: string[], value: any) {
 		const newData = JSON.parse(JSON.stringify(data));
@@ -105,7 +106,7 @@
 	const messageId = (prev: string, index: number) => {
 		switch (true) {
 			case /Bank*/.test(command):
-				return getPreset(prev, index) + ' Preset';
+				return `Preset ${getPreset(prev, index)} Backup`; //getPreset(prev, index) + ' Preset';
 			case command == 'Preset Backup':
 				return 'Active Preset';
 			case command == 'Unknown Command':
@@ -216,15 +217,15 @@
 </Table.Root>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="lg:max-w-[80vw]">
+	<Dialog.Content class="max-h-[90vh] lg:max-w-[80vw]">
 		<Dialog.Header>
 			<Dialog.Title>Inspect SysEx Message</Dialog.Title>
 		</Dialog.Header>
-		<div class="grid grid-cols-2">
+		<div class="mt-4 grid grid-cols-2 gap-4">
 			<!--<div class="wrap-anywhere">
 					{bytesToString(content.raw)}
 				</div>-->
-			<ScrollArea class="h-[80vh] font-mono">
+			<ScrollArea class="max-h-[70vh] font-mono">
 				<TreeNode
 					schema={content.index == 0
 						? /Bank*/.test(command)
@@ -237,7 +238,7 @@
 					updateData={updateChange}
 				/>
 			</ScrollArea>
-			<ScrollArea class="h-[80vh] font-mono">
+			<ScrollArea class="max-h-[70vh] font-mono">
 				{#if raw}
 					<div class="">{bytesToString(content.raw).join(' ')}</div>
 				{:else}
@@ -247,8 +248,9 @@
 		</div>
 		<Dialog.Footer>
 			<Button
-				disabled={validationErrors.length != 0}
+				disabled={valid}
 				onclick={() => {
+					console.log(data);
 					content.json = JSON.stringify(data, null, '\t');
 				}}>Save</Button
 			>
