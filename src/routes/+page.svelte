@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import type { Filters, Message } from '$lib';
-	import { downloadBank, getInfo, getManufacturer } from '$lib';
+	import { Command, downloadBank, getInfo, getManufacturer } from '$lib';
 	import { Settings, Circle, Orderable } from '$lib';
 	import * as Select from '$lib/components/ui/select/index';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index';
@@ -126,16 +126,7 @@
 			} else {
 				bankpresetIn.preset++;
 			}
-			const [manufacturer, model] = getInfo(l);
-			messages.push({
-				id: idx,
-				manufacturer: manufacturer,
-				model: model,
-				bankpreset: `${bankpresetIn.bank}${bankpresetIn.preset > 0 ? bankpresetIn.preset.toString() : ''}`,
-				name: '',
-				data: s,
-				raw: l
-			});
+			messages.push(parseMessage(l));
 			idx++;
 		});
 		scrollToBottom(element);
@@ -234,8 +225,6 @@
 		const file = input.files?.[0];
 		if (!file) return;
 		outgoingMessages = [];
-		let bank = '';
-		let preset = 0;
 		loading = true;
 		await tick();
 
@@ -248,24 +237,7 @@
 			}
 			const lines = splitSysExData(bytes);
 			lines.forEach((l) => {
-				const s = Array.from(l).map((v) => v.toString(16).padStart(2, '0'));
-				const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-				if (text.substring(8, 18) == 'BankBackup') {
-					bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
-					preset = 0;
-				} else {
-					preset++;
-				}
-				const [manufacturer, model] = getInfo(l);
-				outgoingMessages.push({
-					id: idx + 1000,
-					manufacturer: manufacturer,
-					model: model,
-					name: text.substring(15, 18),
-					bankpreset: `${bank}${preset ? preset.toString() : ''}`,
-					data: s,
-					raw: l
-				});
+				outgoingMessages.push(parseMessage(l));
 				idx++;
 			});
 		} catch (error) {
@@ -292,12 +264,12 @@
 		});
 	}
 
-	function splitSysExData(data: Uint8Array) {
+	function splitSysExData(raw: Uint8Array) {
 		let index = 0;
 		const array: Uint8Array[] = [];
-		while (index < data.length) {
-			const newIndex = data.indexOf(0xf7, index) + 1;
-			const bytes: Uint8Array = data.slice(index, newIndex);
+		while (index < raw.length) {
+			const newIndex = raw.indexOf(0xf7, index) + 1;
+			const bytes: Uint8Array = raw.slice(index, newIndex);
 			array.push(bytes);
 			index = newIndex;
 		}
@@ -308,19 +280,31 @@
 		const message = Array.from(raw).map((v) => v.toString(16).padStart(2, '0'));
 		const text = message.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 		idx++;
-		let bank = '';
-		if (text.substring(8, 18) == 'BankBackup') {
-			bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
-		}
 		const [manufacturer, model] = getInfo(raw);
+		let command: Command;
+		switch (true) {
+			case text.substring(9, 18) == 'BankBackup':
+				command = Command.BANK_BACKUP;
+				break;
+			case text.substring(7, 19) == 'PresetBackup':
+				command = Command.PRESET_BACKUP;
+				break;
+			case text.includes('base'):
+				command = Command.PRESET;
+				break;
+			default:
+				command = Command.UNKNOWN;
+				break;
+		}
+		const content = JSON.parse(text.slice(6, -1));
 		return {
 			id: idx + 1000,
 			manufacturer: manufacturer,
 			model: model,
-			name: '',
-			bankpreset: bank,
 			data: message,
-			raw: raw
+			raw: raw,
+			content: content,
+			command: command
 		};
 	}
 
@@ -483,7 +467,7 @@
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
-					{#each messages as item, index (item.id)}
+					{#each messages as item, index (index)}
 						<Table.Row>
 							<Table.Cell>{index}</Table.Cell>
 							<Table.Cell>{item.manufacturer}</Table.Cell>

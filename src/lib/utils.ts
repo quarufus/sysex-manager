@@ -54,13 +54,18 @@ export function messageStatus(message: MIDIMessageEvent): string {
 	}
 }
 
-export function downloadMessage(msg: Uint8Array) {
-	let binary = [];
-	for (let i = 0; i < msg.length; i++) {
-		binary[i] = parseInt(msg[i].toString(16), 16);
-	}
+export function downloadPreset(content: object, raw: Uint8Array) {
+	const ids: number[] = [];
 	const cmd = [34, 80, 114, 101, 115, 101, 116, 66, 97, 99, 107, 117, 112, 34];
-	binary = [...binary.slice(0, 6), ...cmd, 247, ...binary];
+	for (let i = 0; i < 6; i++) {
+		ids[i] = parseInt(raw[i].toString(16), 16);
+	}
+	const s = JSON.stringify(content);
+	const body = [];
+	for (let i = 0; i < s.length; i++) {
+		body[i] = s.charCodeAt(i);
+	}
+	const binary = [...ids, ...cmd, 247, ...ids, ...body, 247];
 	const byteArray = new Uint8Array(binary);
 	const blob = new Blob([byteArray], { type: 'application/octet-stream' });
 	const url = URL.createObjectURL(blob);
@@ -69,6 +74,23 @@ export function downloadMessage(msg: Uint8Array) {
 	a.href = url;
 	a.click();
 	window.URL.revokeObjectURL(url);
+}
+
+export function saveMessage(message: Message, data: object) {
+	message.content = data;
+	const ids: number[] = [];
+	for (let i = 0; i < 6; i++) {
+		ids[i] = parseInt(message.raw[i].toString(16), 16);
+	}
+	console.log(
+		JSON.stringify(data)
+			.split('')
+			.map((c) => c.charCodeAt(0))
+	);
+	const raw = JSON.stringify(data)
+		.split('')
+		.map((c) => c.charCodeAt(0));
+	message.raw = new Uint8Array([...ids, ...raw, 247]);
 }
 
 export function bytesToString(bytes: Uint8Array): string[] {

@@ -23,8 +23,6 @@
 	} = $props();
 	let expanded: boolean = $state(path.length < 1);
 
-	updateData(path, value);
-
 	function toggle() {
 		expanded = !expanded;
 	}

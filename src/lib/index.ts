@@ -1,7 +1,6 @@
 export * from './utils';
 export * from './types';
 export * from './id-table';
-export { default as MessageRow } from './ui/MessageRow.svelte';
 export { default as Select } from './ui/Select.svelte';
 export { default as Settings } from './icons/Settings.svelte';
 export { default as Circle } from './icons/Circle.svelte';

@@ -23,6 +23,8 @@
 	validationErrors = validationErrors;
 	onChange = onChange;
 
+	onChange(value);
+
 	function getOptions(schema: z.ZodType): string[] {
 		if (schema instanceof z.ZodEnum) {
 			return schema.options.map((v) => v.toString());

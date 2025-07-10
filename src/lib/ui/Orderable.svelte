@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { cn, downloadMessage, bytesToString } from '$lib/utils';
+	import { cn, downloadPreset, bytesToString, saveMessage } from '$lib/utils';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { flip } from 'svelte/animate';
 	import { fade } from 'svelte/transition';
-	import { type Message } from '$lib/types';
+	import { Command, type Message } from '$lib/types';
 	import * as Table from '$lib/components/ui/table/index';
 	import * as Dialog from '$lib/components/ui/dialog/index';
 	import { Edit } from '$lib';
@@ -17,19 +17,11 @@
 
 	let { items = $bindable() }: { items: Message[] } = $props();
 	let open: boolean = $state(false);
-	const content: {
-		raw: Uint8Array;
-		data: string[];
-		json: string;
-		index: number;
-	} = $state({
-		raw: new Uint8Array(),
-		data: [],
-		json: '',
-		index: 0
-	});
 
 	let raw: boolean = $state(false);
+	let bank = '';
+	let index: number = $state(-1);
+	let tempMessage = $state({ content: {}, command: Command.UNKNOWN, raw: new Uint8Array() });
 
 	let data = $state({});
 	let validationErrors: $ZodIssue[] = $state([]);
@@ -48,7 +40,11 @@
 		data = newData;
 
 		const result = PresetParameters.safeParse(data);
+
 		validationErrors = result.error?.issues ?? [];
+		if (validationErrors.length == 0) {
+			tempMessage.content = JSON.parse(JSON.stringify(data, null, '\t'));
+		}
 	}
 
 	function formatSize(size: number): string {
@@ -94,7 +90,7 @@
 			if (items.length == 0) return '';
 			const s = items[0].data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 			if (s.slice(8, 18) == 'BankBackup') {
-				const bank = String.fromCharCode(parseInt(s.slice(20, 21) + String(65)));
+				bank = String.fromCharCode(parseInt(s.slice(20, 21)) + 65);
 				return `Bank ${bank} Backup`;
 			} else if (s.slice(7, 19) == 'PresetBackup') {
 				return 'Preset Backup';
@@ -103,10 +99,10 @@
 		})()
 	);
 
-	const messageId = (prev: string, index: number) => {
+	const messageId = (index: number) => {
 		switch (true) {
 			case /Bank*/.test(command):
-				return `Preset ${getPreset(prev, index)} Backup`; //getPreset(prev, index) + ' Preset';
+				return `Preset ${bank}${index.toString()} Backup`;
 			case command == 'Preset Backup':
 				return 'Active Preset';
 			case command == 'Unknown Command':
@@ -114,49 +110,16 @@
 		}
 	};
 
-	function getName(data: string[], bp: string): string {
-		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-		try {
-			const obj = JSON.parse(parsed.slice(6, -1));
-			if (obj.name) {
-				return obj.name;
-			} else {
-				return bp;
-			}
-		} catch (e) {
-			console.error(e);
+	function getName(message: Message): string {
+		if (typeof message.content == 'string') return '-';
+		if ('name' in message.content) {
+			return message.content.name?.toString() ?? '';
 		}
 		return '-';
 	}
 
-	function getPreset(prev: string, index: number): string {
-		if (prev.length > 1) {
-			prev = prev.substring(0, 1) + index.toString();
-			//return prev.substring(0, 1) + index.toString();
-		}
-		return prev;
-	}
-
 	function toggleDialog() {
 		open = !open;
-	}
-
-	function json(data: string[]): string {
-		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-		try {
-			return JSON.stringify(JSON.parse(parsed.slice(6, -1)), null, '\t');
-		} catch {
-			return parsed;
-		}
-	}
-
-	function obj(data: string[]) {
-		const parsed = data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-		try {
-			return JSON.parse(parsed.slice(6, -1));
-		} catch (e) {
-			console.error(e);
-		}
 	}
 </script>
 
@@ -174,16 +137,16 @@
 		</Table.Row>
 	</Table.Header>
 	<Table.Body>
-		{#each items as item, index (item.id)}
+		{#each items as item, i (i)}
 			<tr
 				use:droppable={{
-					container: index.toString(),
+					container: i.toString(),
 					callbacks: dragDropCallbacks
 				}}
 				use:draggable={{
-					container: index.toString(),
+					container: i.toString(),
 					dragData: item,
-					disabled: item.bankpreset.length == 1 ? true : false
+					disabled: item.command == Command.BANK_BACKUP || item.command == Command.PRESET_BACKUP
 				}}
 				animate:flip={{ duration: 200 }}
 				in:fade={{ duration: 150 }}
@@ -191,22 +154,25 @@
 				data-slot="table-row"
 				class={cn('hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors')}
 			>
-				<Table.Cell>{index}</Table.Cell>
+				<Table.Cell>{i}</Table.Cell>
 				<Table.Cell>{item.manufacturer}</Table.Cell>
 				<Table.Cell>{item.model}</Table.Cell>
-				<!--<Table.Cell>{getPreset(item.bankpreset, index)}</Table.Cell>-->
-				<Table.Cell>{getName(item.data, item.bankpreset)}</Table.Cell>
-				<Table.Cell>{index == 0 ? command : messageId(item.bankpreset, index)}</Table.Cell>
+				<!--<Table.Cell>{getPreset(item.bankpreset, i)}</Table.Cell>-->
+				<Table.Cell>{getName(item)}</Table.Cell>
+				<Table.Cell>{i == 0 ? command : messageId(i)}</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
 				<Table.Cell
 					><Button
+						disabled={i == 0}
 						variant="outline"
 						onclick={() => {
-							data = obj(item.data);
-							content.raw = item.raw;
-							content.data = item.data;
-							content.json = json(item.data);
-							content.index = index;
+							tempMessage = {
+								command: item.command,
+								content: item.content,
+								raw: Uint8Array.from(item.raw)
+							};
+							data = tempMessage.content;
+							index = i;
 							toggleDialog();
 						}}><Edit /></Button
 					></Table.Cell
@@ -227,22 +193,22 @@
 				</div>-->
 			<ScrollArea class="max-h-[70vh] font-mono">
 				<TreeNode
-					schema={content.index == 0
-						? /Bank*/.test(command)
-							? Bank
-							: PresetBackup
-						: PresetParameters}
+					schema={tempMessage.command == Command.BANK_BACKUP
+						? Bank
+						: tempMessage.command == Command.PRESET_BACKUP
+							? PresetBackup
+							: PresetParameters}
 					path={[]}
-					value={obj(content.data)}
+					value={tempMessage.content}
 					{validationErrors}
 					updateData={updateChange}
 				/>
 			</ScrollArea>
 			<ScrollArea class="max-h-[70vh] font-mono">
 				{#if raw}
-					<div class="">{bytesToString(content.raw).join(' ')}</div>
+					<div class="">{bytesToString(tempMessage.raw).join(' ')}</div>
 				{:else}
-					<pre class="wrap-anywhere">{content.json}</pre>
+					<pre class="wrap-anywhere">{JSON.stringify(tempMessage.content, null, '\t')}</pre>
 				{/if}
 			</ScrollArea>
 		</div>
@@ -251,15 +217,16 @@
 				disabled={valid}
 				onclick={() => {
 					console.log(data);
-					content.json = JSON.stringify(data, null, '\t');
+					saveMessage(items[index], JSON.parse(JSON.stringify(data, null, '\t')));
+					toggleDialog();
 				}}>Save</Button
 			>
 			<Button
 				onclick={() => {
-					downloadMessage(content.raw);
+					downloadPreset(tempMessage.content, tempMessage.raw);
 				}}>Download syx file</Button
 			>
-			<Button onclick={() => (raw = !raw)}>View Raw</Button>
+			<Button onclick={() => (raw = !raw)}>Toggle Raw</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

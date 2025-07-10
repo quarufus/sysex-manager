@@ -2,16 +2,18 @@ export interface Message {
 	id: number;
 	manufacturer: string;
 	model: string;
-	bankpreset: string;
-	name: string;
 	data: string[];
 	raw: Uint8Array;
+	content: object;
+	command: Command;
 }
 
 export enum Command {
 	BANK_BACKUP,
 	PRESET_BACKUP,
-	UPDATE
+	PRESET,
+	UPDATE,
+	UNKNOWN
 }
 
 export interface Bank {
