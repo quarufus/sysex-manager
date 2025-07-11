@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { cn, downloadPreset, bytesToString, saveMessage } from '$lib/utils';
+	import {
+		cn,
+		downloadPreset,
+		bytesToString,
+		saveMessage,
+		validateMessages,
+		bytesToAscii
+	} from '$lib/utils';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { flip } from 'svelte/animate';
 	import { fade } from 'svelte/transition';
@@ -12,14 +19,16 @@
 	import { dndState } from '@thisux/sveltednd';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
 	import TreeNode from './TreeNode.svelte';
-	import { Bank, PresetBackup, PresetParameters } from '$lib/schema';
+	import { Bank, PresetParameters } from '$lib/schema';
+	import { z } from 'zod/v4';
 	import { type $ZodIssue } from 'zod/v4/core';
+	import Icon from '@iconify/svelte';
 
 	let { items = $bindable() }: { items: Message[] } = $props();
-	let open: boolean = $state(false);
+	let editor: boolean = $state(false);
+	let viewer: boolean = $state(false);
 
 	let raw: boolean = $state(false);
-	let bank = '';
 	let index: number = $state(-1);
 	let tempMessage = $state({ content: {}, command: Command.UNKNOWN, raw: new Uint8Array() });
 
@@ -58,7 +67,7 @@
 	function validateDrop(state: DragDropState<Message>) {
 		const { targetContainer } = state;
 
-		dndState.invalidDrop = targetContainer == '0';
+		dndState.invalidDrop = targetContainer == '0' && items[0].command != Command.PRESET;
 	}
 
 	const dragDropCallbacks = {
@@ -79,47 +88,39 @@
 				const [item] = items.splice(dragIndex, 1);
 				items.splice(dropIndex, 0, item);
 			}
+			validateMessages(items);
 		},
 		onDragEnd: () => {
 			dndState.invalidDrop = true;
 		}
 	};
 
-	const command = $derived(
-		(function () {
-			if (items.length == 0) return '';
-			const s = items[0].data.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-			if (s.slice(8, 18) == 'BankBackup') {
-				bank = String.fromCharCode(parseInt(s.slice(20, 21)) + 65);
+	function cmd(item: Message, i: number): string {
+		const bank = String.fromCharCode(items[0].content.BankBackup + 65);
+		switch (item.command) {
+			case Command.BANK_BACKUP:
 				return `Bank ${bank} Backup`;
-			} else if (s.slice(7, 19) == 'PresetBackup') {
+			case Command.PRESET_BACKUP:
 				return 'Preset Backup';
-			}
-			return 'Unknown SysEx Command';
-		})()
-	);
-
-	const messageId = (index: number) => {
-		switch (true) {
-			case /Bank*/.test(command):
-				return `Preset ${bank}${index.toString()} Backup`;
-			case command == 'Preset Backup':
+			case Command.PRESET:
+				return `Preset ${bank}${i.toString()} Backup`;
+			case Command.ACTIVE:
 				return 'Active Preset';
-			case command == 'Unknown Command':
-				return 'Unknown SysEx Command';
+			case Command.UPDATE:
+				return 'Update';
+			case Command.UNKNOWN:
+				return 'Unknown command';
+			default:
+				return '';
 		}
-	};
+	}
 
 	function getName(message: Message): string {
 		if (typeof message.content == 'string') return '-';
-		if ('name' in message.content) {
-			return message.content.name?.toString() ?? '';
+		if (message.content.name) {
+			return message.content.name.toString();
 		}
 		return '-';
-	}
-
-	function toggleDialog() {
-		open = !open;
 	}
 </script>
 
@@ -146,7 +147,10 @@
 				use:draggable={{
 					container: i.toString(),
 					dragData: item,
-					disabled: item.command == Command.BANK_BACKUP || item.command == Command.PRESET_BACKUP
+					disabled:
+						item.command == Command.BANK_BACKUP ||
+						item.command == Command.PRESET_BACKUP ||
+						item.command == Command.UPDATE
 				}}
 				animate:flip={{ duration: 200 }}
 				in:fade={{ duration: 150 }}
@@ -159,44 +163,69 @@
 				<Table.Cell>{item.model}</Table.Cell>
 				<!--<Table.Cell>{getPreset(item.bankpreset, i)}</Table.Cell>-->
 				<Table.Cell>{getName(item)}</Table.Cell>
-				<Table.Cell>{i == 0 ? command : messageId(i)}</Table.Cell>
+				<Table.Cell>{cmd(item, i)}</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
-				<Table.Cell
-					><Button
-						disabled={i == 0}
-						variant="outline"
-						onclick={() => {
-							tempMessage = {
-								command: item.command,
-								content: item.content,
-								raw: Uint8Array.from(item.raw)
-							};
-							data = tempMessage.content;
-							index = i;
-							toggleDialog();
-						}}><Edit /></Button
-					></Table.Cell
-				>
+				<Table.Cell>
+					{#if item.command == Command.UPDATE || item.command == Command.PRESET_BACKUP}
+						<Button
+							variant="outline"
+							onclick={() => {
+								tempMessage = {
+									command: item.command,
+									content: {},
+									raw: Uint8Array.from(item.raw)
+								};
+								viewer = !viewer;
+							}}
+						>
+							<Icon icon="lucide:inspect" />
+						</Button>
+					{:else}
+						<Button
+							variant="outline"
+							onclick={() => {
+								tempMessage = {
+									command: item.command,
+									content: item.content,
+									raw: Uint8Array.from(item.raw)
+								};
+								data = tempMessage.content;
+								index = i;
+								editor = !editor;
+							}}
+						>
+							<Edit /></Button
+						>
+					{/if}
+				</Table.Cell>
 			</tr>
 		{/each}
 	</Table.Body>
 </Table.Root>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open={viewer}>
+	<Dialog.Content class="font-mono">
+		<ScrollArea class="h-[50vh]">
+			<div class="grid grid-cols-[75%_25%]">
+				<div>{bytesToString(tempMessage.raw).join(' ')}</div>
+				<div class="break-all">{bytesToAscii(tempMessage.raw)}</div>
+			</div>
+		</ScrollArea>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={editor}>
 	<Dialog.Content class="max-h-[90vh] lg:max-w-[80vw]">
 		<Dialog.Header>
 			<Dialog.Title>Inspect SysEx Message</Dialog.Title>
 		</Dialog.Header>
 		<div class="mt-4 grid grid-cols-2 gap-4">
-			<!--<div class="wrap-anywhere">
-					{bytesToString(content.raw)}
-				</div>-->
 			<ScrollArea class="max-h-[70vh] font-mono">
 				<TreeNode
 					schema={tempMessage.command == Command.BANK_BACKUP
 						? Bank
 						: tempMessage.command == Command.PRESET_BACKUP
-							? PresetBackup
+							? z.literal('PresetBackup')
 							: PresetParameters}
 					path={[]}
 					value={tempMessage.content}
@@ -218,7 +247,7 @@
 				onclick={() => {
 					console.log(data);
 					saveMessage(items[index], JSON.parse(JSON.stringify(data, null, '\t')));
-					toggleDialog();
+					editor = !editor;
 				}}>Save</Button
 			>
 			<Button

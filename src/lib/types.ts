@@ -4,7 +4,7 @@ export interface Message {
 	model: string;
 	data: string[];
 	raw: Uint8Array;
-	content: object;
+	content: Record<string, number>;
 	command: Command;
 }
 
@@ -12,6 +12,7 @@ export enum Command {
 	BANK_BACKUP,
 	PRESET_BACKUP,
 	PRESET,
+	ACTIVE,
 	UPDATE,
 	UNKNOWN
 }

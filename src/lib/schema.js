@@ -268,6 +268,6 @@ export const BankBackup = z
 		presets: presets
 	}));
 
-export const PresetBackup = z.tuple([z.literal('PresetBackup'), z.any()]);
+export const PresetBackup = z.tuple([z.literal('PresetBackup'), PresetParameters]);
 
 export const ArtemisMessage = z.union([BankBackup, PresetBackup]);

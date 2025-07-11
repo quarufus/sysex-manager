@@ -13,7 +13,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index';
 	import * as Table from '$lib/components/ui/table/index';
 	import Load from '$lib/icons/Load.svelte';
-	import { BankBackup, PresetBackup } from '$lib/schema';
+	import { ArtemisMessage, BankBackup, PresetBackup } from '$lib/schema';
 	import { default as MyAlert } from '$lib/ui/Alert.svelte';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
 	import { toggleMode } from 'mode-watcher';
@@ -52,7 +52,6 @@
 	let pause: number = $state(0);
 	let customCmd: string = $state('');
 	let files: FileList | undefined = $state();
-	let element!: HTMLDivElement;
 
 	onMount(() => {
 		if (
@@ -117,7 +116,7 @@
 			}
 		}
 		const lines = msg.data[0] == 240 ? splitSysExData(msg.data) : [msg.data];
-		lines.forEach((l) => {
+		lines.forEach((l, i) => {
 			const s = Array.from(l).map((v) => v.toString(16).toUpperCase().padStart(2, '0'));
 			const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 			if (text.substring(8, 18) == 'BankBackup') {
@@ -126,10 +125,10 @@
 			} else {
 				bankpresetIn.preset++;
 			}
-			messages.push(parseMessage(l));
+			messages.push(parseMessage(l, messages[i - 1]));
 			idx++;
 		});
-		scrollToBottom(element);
+		//scrollToBottom(element);
 	}
 
 	function sendSysEx() {
@@ -140,6 +139,11 @@
 		}
 		if (outgoingMessages.length == 0) {
 			displayAlert('There are no messages to send.');
+			return;
+		}
+
+		if (outgoingMessages[0].command == Command.BANK_BACKUP && outgoingMessages.length != 65) {
+			displayAlert('A Bank Backup command needs to include 64 presets.');
 			return;
 		}
 
@@ -165,11 +169,10 @@
 			result = PresetBackup.safeParse(objects);
 		}
 
-		if (result?.error) {
-			//const tree = z.treeifyError(result.error);
-			console.error(result.error.issues);
-			//const errors = tree.errors;
-			//displayAlert('Error', errors.join('\n'), AlertType.ERROR);
+		result = ArtemisMessage.safeParse(objects);
+
+		if (result.error) {
+			displayAlert('Error', result.error.message, AlertType.ERROR);
 		}
 
 		sendStatus = 'Sending';
@@ -237,7 +240,7 @@
 			}
 			const lines = splitSysExData(bytes);
 			lines.forEach((l) => {
-				outgoingMessages.push(parseMessage(l));
+				outgoingMessages.push(parseMessage(l, outgoingMessages[0]));
 				idx++;
 			});
 		} catch (error) {
@@ -276,18 +279,30 @@
 		return array;
 	}
 
-	function parseMessage(raw: Uint8Array): Message {
+	function parseMessage(raw: Uint8Array, previous: Message | undefined): Message {
 		const message = Array.from(raw).map((v) => v.toString(16).padStart(2, '0'));
 		const text = message.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 		idx++;
 		const [manufacturer, model] = getInfo(raw);
 		let command: Command;
 		switch (true) {
-			case text.substring(9, 18) == 'BankBackup':
+			case text.substring(8, 18) == 'BankBackup':
 				command = Command.BANK_BACKUP;
 				break;
 			case text.substring(7, 19) == 'PresetBackup':
 				command = Command.PRESET_BACKUP;
+				break;
+			case text.includes('base') && previous == undefined:
+				command = Command.PRESET;
+				break;
+			case previous == undefined:
+				command = Command.UPDATE;
+				break;
+			case previous?.command == Command.UPDATE:
+				command = Command.UPDATE;
+				break;
+			case previous?.command == Command.PRESET_BACKUP:
+				command = Command.ACTIVE;
 				break;
 			case text.includes('base'):
 				command = Command.PRESET;
@@ -296,7 +311,12 @@
 				command = Command.UNKNOWN;
 				break;
 		}
-		const content = JSON.parse(text.slice(6, -1));
+		let content;
+		try {
+			content = JSON.parse(text.slice(6, -1));
+		} catch {
+			content = '';
+		}
 		return {
 			id: idx + 1000,
 			manufacturer: manufacturer,
@@ -307,12 +327,6 @@
 			command: command
 		};
 	}
-
-	const scrollToBottom = (node: HTMLDivElement) => {
-		if (node.scrollHeight) {
-			node.scrollTop = node.scrollHeight;
-		}
-	};
 </script>
 
 <div class="flex items-center justify-between p-4">
@@ -376,7 +390,7 @@
 				<Dialog.Trigger class={buttonVariants({ variant: 'default' })}
 					>Create Command</Dialog.Trigger
 				>
-				<Dialog.Content>
+				<Dialog.Content class="h-[50vh] w-[50vw]">
 					<Dialog.Header>
 						<Dialog.Title>Create Command</Dialog.Title>
 						<Dialog.Description
@@ -390,7 +404,10 @@
 								type="submit"
 								onclick={() => {
 									outgoingMessages.push(
-										parseMessage(Uint8Array.from(customCmd.split(' ').map((v) => parseInt(v, 16))))
+										parseMessage(
+											Uint8Array.from(customCmd.split(' ').map((v) => parseInt(v, 16))),
+											outgoingMessages[0]
+										)
 									);
 								}}>Add command</Button
 							>
@@ -447,11 +464,7 @@
 			</ScrollArea>
 		{/if}
 	</div>
-	<div
-		class="win border-shade view overflow-auto rounded-sm border text-wrap"
-		id="in"
-		bind:this={element}
-	>
+	<div class="win border-shade view overflow-auto rounded-sm border text-wrap" id="in">
 		<ScrollArea class="h-full">
 			<Table.Root class="font-mono">
 				<Table.Header>

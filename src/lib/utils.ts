@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import type { Message } from './types';
+import { Command, type Message } from './types';
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -76,7 +76,7 @@ export function downloadPreset(content: object, raw: Uint8Array) {
 	window.URL.revokeObjectURL(url);
 }
 
-export function saveMessage(message: Message, data: object) {
+export function saveMessage(message: Message, data: Record<string, number>) {
 	message.content = data;
 	const ids: number[] = [];
 	for (let i = 0; i < 6; i++) {
@@ -97,6 +97,15 @@ export function bytesToString(bytes: Uint8Array): string[] {
 	return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0').toUpperCase());
 }
 
+export function bytesToAscii(bytes: Uint8Array): string {
+	return Array.from(bytes)
+		.map((b) => {
+			if (b < 33) return '•';
+			return String.fromCharCode(b);
+		})
+		.join('');
+}
+
 export function downloadBank(messages: Message[]) {
 	if (messages.length == 0) {
 		return;
@@ -112,4 +121,33 @@ export function downloadBank(messages: Message[]) {
 	a.href = url;
 	a.click();
 	window.URL.revokeObjectURL(url);
+}
+
+export function validateMessages(messages: Message[]) {
+	messages.forEach((m, i) => {
+		const message = Array.from(m.raw).map((v) => v.toString(16).padStart(2, '0'));
+		const text = message.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
+		let command: Command;
+		switch (true) {
+			case text.substring(8, 18) == 'BankBackup':
+				command = Command.BANK_BACKUP;
+				break;
+			case text.substring(7, 19) == 'PresetBackup':
+				command = Command.PRESET_BACKUP;
+				break;
+			case text.includes('base') && i == 0:
+				command = Command.PRESET;
+				break;
+			case messages[i - 1].command == Command.PRESET_BACKUP:
+				command = Command.ACTIVE;
+				break;
+			case text.includes('base'):
+				command = Command.PRESET;
+				break;
+			default:
+				command = Command.UNKNOWN;
+				break;
+		}
+		m.command = command;
+	});
 }
