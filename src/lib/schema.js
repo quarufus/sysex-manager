@@ -133,19 +133,85 @@ export const ModulationsParameters = z.object({
 	mix: Norm
 });
 
-export const DelaysParameters = z.object({
-	typ: DelaysType,
+export const StereoDelay = z.object({
+	left_time: Norm,
+	right_time: Norm,
+	feedback: Norm,
+	damping: SNorm
+});
+
+export const PingPongDelay = z.object({
+	time: Norm,
+	pan: z.boolean(),
+	feedback: Norm,
+	damping: SNorm
+});
+
+export const BbdDelay = z.object({
 	time: Norm,
 	feedback: Norm,
-	damping: SNorm,
+	mod_frequency: Norm,
+	mod_depth: Norm
+});
+
+export const RandomRepeaterDelay = z.object({
+	length: Norm,
+	envelope: Norm,
+	repeats: Norm,
+	probability: Norm
+});
+
+export const DelaysParameters = z.object({
+	typ: DelaysType,
+	stereo: StereoDelay,
+	ping_pong: PingPongDelay,
+	bbd: BbdDelay,
+	random_repeater: RandomRepeaterDelay,
 	mix: Norm
+});
+
+export const SmallReverb = z.object({
+	pre_delay: Norm,
+	size: Norm,
+	feedback: Norm,
+	damping: Norm
+});
+
+export const LargeReverb = z.object({
+	pre_delay: Norm,
+	size: Norm,
+	feedback: Norm,
+	damping: SNorm
+});
+
+export const HugeReverb = z.object({
+	size: Norm,
+	feedback: Norm,
+	speed: Norm,
+	mod_depth: Norm
+});
+
+export const ShimmerRevertb = z.object({
+	pitch: Norm,
+	size: Norm,
+	decay: Norm,
+	damping: Norm
+});
+
+export const GranularReverb = z.object({
+	grains: Norm,
+	grain_size: Norm,
+	detune: Norm,
+	feedback: Norm
 });
 
 export const ReverbsParameters = z.object({
 	typ: ReverbsType,
-	size: Norm,
-	feedback: Norm,
-	damping: SNorm,
+	small: SmallReverb,
+	large: LargeReverb,
+	huge: HugeReverb,
+	shimmer: ShimmerRevertb,
+	granular: GranularReverb,
 	mix: Norm
 });
 
@@ -179,11 +245,27 @@ export const ModulationCoefficients = z.object({
 	lfo_1_vcf_amount: SNorm,
 	lfo_2_rate: SNorm,
 	lfo_2_xmod: SNorm,
+	lfo_2_morph_amount: Norm,
+	lfo_2_vco_1_pw_amount: Norm,
+	vco_sub_noise: Norm,
 	vco_mix: Norm,
 	vco_morph: Norm,
+	vco_2_tune: Norm,
+	vco_detune: Norm,
+	vco_glide: Norm,
+	vco_pw: Norm,
+	vco_fm: Norm,
 	lpf_cut: Norm,
 	lpf_reson: Norm,
-	level: PresetLevel
+	lpf_ffm: Norm,
+	hpf_cut: Norm,
+	hpf_reson: Norm,
+	spread: Norm,
+	vca_eg_a: Norm,
+	vca_eg_d: Norm,
+	vca_eg_s: Norm,
+	vca_eg_r: Norm
+	//level: PresetLevel
 });
 
 export const BaseParameters = z.object({

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import {
-		cn,
 		downloadPreset,
 		bytesToString,
 		saveMessage,
@@ -23,6 +22,7 @@
 	import { z } from 'zod/v4';
 	import { type $ZodIssue } from 'zod/v4/core';
 	import Icon from '@iconify/svelte';
+	import { Badge } from '$lib/components/ui/badge/index';
 
 	let { items = $bindable() }: { items: Message[] } = $props();
 	let editor: boolean = $state(false);
@@ -115,26 +115,37 @@
 		}
 	}
 
-	function getName(message: Message): string {
-		if (typeof message.content == 'string') return '-';
+	function getName(message: Message): string | null {
+		if (typeof message.content == 'string') return null;
 		if (message.content.name) {
 			return message.content.name.toString();
 		}
-		return '-';
+		return null;
+	}
+
+	function info(message: Message, index: number): string[] {
+		const parts: string[] = [];
+		if (message.model) parts.push(message.model);
+		parts.push(cmd(message, index));
+		const name = getName(message);
+		if (name != null) {
+			parts.push(name);
+		}
+		return parts;
 	}
 </script>
 
 <Table.Root class="font-mono">
 	<Table.Header>
 		<Table.Row>
-			<Table.Head>#</Table.Head>
-			<Table.Head>Manufacturer</Table.Head>
-			<Table.Head>Model</Table.Head>
-			<!--<Table.Head>B/P</Table.Head>-->
+			<Table.Head class="w-0">#</Table.Head>
+			<Table.Head class="w-0">Manufacturer</Table.Head>
+			<!--<Table.Head>Model</Table.Head>
 			<Table.Head>Name</Table.Head>
-			<Table.Head>Command</Table.Head>
-			<Table.Head>Length</Table.Head>
-			<Table.Head class="w-16"></Table.Head>
+			<Table.Head>Command</Table.Head>-->
+			<Table.Head class="w-max">Info</Table.Head>
+			<Table.Head class="w-0">Length</Table.Head>
+			<Table.Head class="w-0"></Table.Head>
 		</Table.Row>
 	</Table.Header>
 	<Table.Body>
@@ -156,18 +167,23 @@
 				in:fade={{ duration: 150 }}
 				out:fade={{ duration: 150 }}
 				data-slot="table-row"
-				class={cn('hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors')}
+				class="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
 			>
 				<Table.Cell>{i}</Table.Cell>
 				<Table.Cell>{item.manufacturer}</Table.Cell>
-				<Table.Cell>{item.model}</Table.Cell>
-				<!--<Table.Cell>{getPreset(item.bankpreset, i)}</Table.Cell>-->
+				<!--<Table.Cell>{item.model}</Table.Cell>
 				<Table.Cell>{getName(item)}</Table.Cell>
-				<Table.Cell>{cmd(item, i)}</Table.Cell>
+				<Table.Cell>{cmd(item, i)}</Table.Cell>-->
+				<Table.Cell>
+					{#each info(item, i) as part, j (j)}
+						<Badge variant="secondary" class="mx-2">{part}</Badge>
+					{/each}
+				</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
 				<Table.Cell>
 					{#if item.command == Command.UPDATE || item.command == Command.PRESET_BACKUP}
 						<Button
+							class="mr-2"
 							variant="outline"
 							onclick={() => {
 								tempMessage = {
@@ -182,8 +198,9 @@
 						</Button>
 					{:else}
 						<Button
+							class="mr-2"
 							variant="outline"
-							onclick={() => {
+							onmousedown={() => {
 								tempMessage = {
 									command: item.command,
 									content: item.content,
@@ -204,7 +221,7 @@
 </Table.Root>
 
 <Dialog.Root bind:open={viewer}>
-	<Dialog.Content class="font-mono">
+	<Dialog.Content class="p-10 font-mono">
 		<ScrollArea class="h-[50vh]">
 			<div class="grid grid-cols-[75%_25%]">
 				<div>{bytesToString(tempMessage.raw).join(' ')}</div>

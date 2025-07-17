@@ -64,6 +64,7 @@
 		"vite": "^6.2.6"
 	},
 	"dependencies": {
+		"@rodrigodagostino/svelte-sortable-list": "^0.16.2",
 		"@thisux/sveltednd": "^0.0.20",
 		"mode-watcher": "^1.1.0",
 		"zod": "^3.25.67"
