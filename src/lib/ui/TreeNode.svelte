@@ -15,7 +15,7 @@
 		updateData,
 		validationErrors
 	}: {
-		schema: z.ZodType;
+		schema: any;
 		value: any;
 		path: string[];
 		updateData: (path: string[], value: any) => void;
@@ -86,7 +86,7 @@
 			{#if value && Array.isArray(value)}
 				{#each value as item, index (index)}
 					<TreeNode
-						{schema}
+						schema={schema.element}
 						value={item}
 						path={[...path, index.toString()]}
 						{updateData}
