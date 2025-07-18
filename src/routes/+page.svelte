@@ -469,14 +469,14 @@
 			<Table.Root class="font-mono">
 				<Table.Header>
 					<Table.Row>
-						<Table.Head>#</Table.Head>
-						<Table.Head>Manufacturer</Table.Head>
-						<Table.Head>Model</Table.Head>
+						<Table.Head class="w-0">#</Table.Head>
+						<Table.Head class="w-0">Manufacturer</Table.Head>
+						<Table.Head class="w-0">Model</Table.Head>
 						<!--<Table.Head>B/P</Table.Head>-->
 						<!--<Table.Head>Name</Table.Head>-->
 						<Table.Head>Content</Table.Head>
-						<Table.Head>Length</Table.Head>
-						<Table.Head></Table.Head>
+						<Table.Head class="w-0">Length</Table.Head>
+						<Table.Head class="w-0"></Table.Head>
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
@@ -487,12 +487,14 @@
 							<Table.Cell>{item.model}</Table.Cell>
 							<!--<Table.Cell>{item.bankpreset}</Table.Cell>
 							<Table.Cell>{item.name}</Table.Cell>-->
-							<Table.Cell>{bytesToString(item.raw.slice(0, 3)).join(' ') + '...'}</Table.Cell>
+							<Table.Cell class="max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap"
+								>{bytesToString(item.raw).join(' ')}
+							</Table.Cell>
 							<Table.Cell class="text-right font-mono">{item.raw.length}</Table.Cell>
 							<Table.Cell>
 								<Dialog.Root>
 									<Dialog.Trigger
-										><Button variant="outline"><Icon icon="lucide:inspect" /></Button
+										><Button variant="outline" class="mr-2"><Icon icon="lucide:inspect" /></Button
 										></Dialog.Trigger
 									>
 									<Dialog.Content class="lg:max-w-[70vw]">
