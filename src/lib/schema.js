@@ -13,7 +13,8 @@ export const u7 = z.number().int().min(0).max(127);
 export const SequencerLength = z.number().int().min(1).max(SEQUENCER_MAX_LENGTH);
 
 // —— Enums ——
-export const PlayMode = z.enum(['Up', 'Down', 'Order', 'Inc', 'Exc', 'Random', 'Poly']);
+export const VoicePlayMode = z.enum(['Poly', 'Tri', 'Duo', 'Unison', 'Mono']);
+export const ArpPlayMode = z.enum(['Up', 'Down', 'Order', 'Inc', 'Exc', 'Random']);
 export const Divisions = z.enum([
 	'D4',
 	'D3',
@@ -174,7 +175,7 @@ export const SmallReverb = z.object({
 	pre_delay: Norm,
 	size: Norm,
 	feedback: Norm,
-	damping: Norm
+	damping: SNorm
 });
 
 export const LargeReverb = z.object({
@@ -195,11 +196,11 @@ export const ShimmerRevertb = z.object({
 	pitch: Norm,
 	size: Norm,
 	decay: Norm,
-	damping: Norm
+	damping: SNorm
 });
 
 export const GranularReverb = z.object({
-	grains: Norm,
+	grains: SNorm,
 	grain_size: Norm,
 	detune: Norm,
 	feedback: Norm
@@ -216,7 +217,7 @@ export const ReverbsParameters = z.object({
 });
 
 export const ArpeggiatorParameters = z.object({
-	play_mode: PlayMode,
+	play_mode: ArpPlayMode,
 	divisions: Divisions,
 	probability: Norm,
 	swing: Norm,
@@ -253,9 +254,9 @@ export const ModulationCoefficients = z.object({
 	vco_2_tune: Norm,
 	vco_detune: Norm,
 	vco_glide: Norm,
-	vco_pw: Norm,
+	vco_pw: SNorm,
 	vco_fm: Norm,
-	lpf_cut: Norm,
+	lpf_cut: SNorm,
 	lpf_reson: Norm,
 	lpf_ffm: Norm,
 	hpf_cut: Norm,
@@ -313,7 +314,7 @@ export const BaseParameters = z.object({
 	eg_r: Norm,
 
 	// Global
-	play_mode: PlayMode,
+	play_mode: VoicePlayMode,
 	legato: Legato,
 	glide: Glide,
 	drive_mode: DriveMode,

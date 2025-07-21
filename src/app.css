@@ -7,7 +7,7 @@
 @source inline('ml-20 ml-10 ml-30 ml-40 ml-50 ml-60 ml-70 ml-3 ml-13 ml-23 ml-33 ml-43 ml-53 ml-63 ml-73');
 
 :root {
-	--radius: 0.625rem;
+	--radius: 0rem;
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
 	--card: oklch(1 0 0);
@@ -20,7 +20,7 @@
 	--secondary-foreground: oklch(0.205 0 0);
 	--muted: oklch(0.97 0 0);
 	--muted-foreground: oklch(0.556 0 0);
-	--accent: oklch(0.97 0 0);
+	--accent: oklch(0.7176 0.1743 25.51); /*oklch(0.269 0 0);*/
 	--accent-foreground: oklch(0.205 0 0);
 	--destructive: oklch(0.577 0.245 27.325);
 	--border: oklch(0.922 0 0);
@@ -55,7 +55,7 @@
 	--secondary-foreground: oklch(0.985 0 0);
 	--muted: oklch(0.269 0 0);
 	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
+	--accent: oklch(0.4852 0.1743 25.51); /*oklch(0.269 0 0);*/
 	--accent-foreground: oklch(0.985 0 0);
 	--destructive: oklch(0.704 0.191 22.216);
 	--border: oklch(1 0 0 / 10%);

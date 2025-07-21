@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import type { Filters, Message } from '$lib';
+	import type { Message } from '$lib';
 	import { Command, downloadBank, getInfo, getManufacturer } from '$lib';
 	import { Settings, Circle, Orderable } from '$lib';
 	import * as Select from '$lib/components/ui/select/index';
@@ -13,7 +13,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index';
 	import * as Table from '$lib/components/ui/table/index';
 	import Load from '$lib/icons/Load.svelte';
-	import { ArtemisMessage, BankBackup, PresetBackup } from '$lib/schema';
+	import { BankBackup, PresetBackup } from '$lib/schema';
 	import { default as MyAlert } from '$lib/ui/Alert.svelte';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
 	import { toggleMode } from 'mode-watcher';
@@ -27,7 +27,6 @@
 	let messages: Message[] = $state([]);
 	let outgoingMessages: Message[] = $state([]);
 	let idx: number = $state(0);
-	const bankpresetIn = $state({ bank: '', preset: 0 });
 	let dark: boolean = $state(false);
 	const outTrigger = $derived(
 		midiOutputs.find((d) => d.id === selectedOutput)?.name ?? 'Choose MIDI out device'
@@ -37,17 +36,6 @@
 	);
 	let sendStatus: string = $state('Send');
 	let loading: boolean = $state(false);
-
-	const filters: Filters = $state({
-		clock: false,
-		sysex: true,
-		note: true,
-		after: true,
-		cc: true,
-		pc: true,
-		pressure: true,
-		bend: true
-	});
 
 	let pause: number = $state(0);
 	let customCmd: string = $state('');
@@ -83,31 +71,6 @@
 		if (!msg.data) {
 			return;
 		}
-		const status = msg.data[0];
-		if (status == 248 && !filters.clock) {
-			return;
-		}
-		if ((status == 240 || status == 247) && !filters.sysex) {
-			return;
-		}
-		if (status >= 128 && status <= 159 && !filters.note) {
-			return;
-		}
-		if (status >= 160 && status <= 175 && !filters.after) {
-			return;
-		}
-		if (status >= 176 && status <= 191 && !filters.cc) {
-			return;
-		}
-		if (status >= 192 && status <= 207 && !filters.pc) {
-			return;
-		}
-		if (status >= 208 && status <= 223 && !filters.pressure) {
-			return;
-		}
-		if (status >= 224 && status <= 239 && !filters.bend) {
-			return;
-		}
 
 		const device = midiInputs.find((d) => d.id == selectedInput);
 		if (!device?.manufacturer || !device.name) {
@@ -115,20 +78,12 @@
 				return;
 			}
 		}
+
 		const lines = msg.data[0] == 240 ? splitSysExData(msg.data) : [msg.data];
 		lines.forEach((l, i) => {
-			const s = Array.from(l).map((v) => v.toString(16).toUpperCase().padStart(2, '0'));
-			const text = s.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
-			if (text.substring(8, 18) == 'BankBackup') {
-				bankpresetIn.bank = String.fromCharCode(parseInt(text.substring(20, 21)) + 65);
-				bankpresetIn.preset = 0;
-			} else {
-				bankpresetIn.preset++;
-			}
 			messages.push(parseMessage(l, messages[i - 1]));
 			idx++;
 		});
-		//scrollToBottom(element);
 	}
 
 	function sendSysEx() {
@@ -165,32 +120,17 @@
 		let result;
 		if (strings[0].includes('BankBackup')) {
 			result = BankBackup.safeParse(objects);
+			if (result.error) {
+				displayAlert('Error', result.error.message, AlertType.ERROR);
+			}
 		} else if (strings[0].includes('PresetBackup')) {
 			result = PresetBackup.safeParse(objects);
-		}
-
-		result = ArtemisMessage.safeParse(objects);
-
-		if (result.error) {
-			displayAlert('Error', result.error.message, AlertType.ERROR);
+			if (result.error) {
+				displayAlert('Error', 'The preset has missing or invalid values', AlertType.ERROR);
+			}
 		}
 
 		sendStatus = 'Sending';
-
-		//const now = performance.now();
-
-		/*
-		for (let i = 0; i < outgoingMessages.length; i++) {
-			const timestamp = now + i * pause;
-			if (device) {
-				if (pause == 0) {
-					device.send(Array.from(outgoingMessages[i].raw));
-				} else {
-					device.send(outgoingMessages[i].raw, timestamp);
-				}
-			}
-		}
-		*/
 
 		let i = 0;
 		setTimeout(function run() {
@@ -329,56 +269,57 @@
 	}
 </script>
 
-<div class="flex items-center justify-between p-4">
-	<h1 class="text-2xl">Sysex Manager</h1>
-	<div class="flex items-center gap-4">
-		<Select.Root type="single" bind:value={selectedOutput} name="MIDI out">
-			<Select.Trigger>
-				{outTrigger}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Group>
-					<Select.Label>Choose MIDI out device</Select.Label>
-					{#each midiOutputs as device (device.id)}
-						<Select.Item value={device.id} label={device.name ?? ''}>{device.name}</Select.Item>
-					{/each}
-				</Select.Group>
-			</Select.Content>
-		</Select.Root>
-		<Select.Root type="single" bind:value={selectedInput} name="MIDI in">
-			<Select.Trigger>
-				{inTrigger}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Group>
-					<Select.Label>Choose MIDI in device</Select.Label>
-					{#each midiInputs as device (device.id)}
-						<Select.Item value={device.id} label={device.name ?? ''}>{device.name}</Select.Item>
-					{/each}
-				</Select.Group>
-			</Select.Content>
-		</Select.Root>
-		<Dialog.Root>
-			<Dialog.Trigger><Settings /></Dialog.Trigger>
-			<Dialog.Content>
-				<Dialog.Header>Settings</Dialog.Header>
-				<div class="flex justify-between">
-					<Label>Pause between messages</Label>
-					<Input class="w-min text-right" type="number" bind:value={pause} />
-				</div>
-				<Slider type="single" bind:value={pause} max={5000} step={1} />
-			</Dialog.Content>
-		</Dialog.Root>
+<div class="flex h-[12vh] items-start">
+	<div class="flex w-full items-center justify-between p-8">
+		<h1 class="text-2xl">Sysex Manager</h1>
+		<div class="flex items-center gap-4">
+			<Select.Root type="single" bind:value={selectedOutput} name="MIDI out">
+				<Select.Trigger>
+					{outTrigger}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Group>
+						<Select.Label>Choose MIDI out device</Select.Label>
+						{#each midiOutputs as device (device.id)}
+							<Select.Item value={device.id} label={device.name ?? ''}>{device.name}</Select.Item>
+						{/each}
+					</Select.Group>
+				</Select.Content>
+			</Select.Root>
+			<Select.Root type="single" bind:value={selectedInput} name="MIDI in">
+				<Select.Trigger>
+					{inTrigger}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Group>
+						<Select.Label>Choose MIDI in device</Select.Label>
+						{#each midiInputs as device (device.id)}
+							<Select.Item value={device.id} label={device.name ?? ''}>{device.name}</Select.Item>
+						{/each}
+					</Select.Group>
+				</Select.Content>
+			</Select.Root>
+			<Dialog.Root>
+				<Dialog.Trigger><Settings /></Dialog.Trigger>
+				<Dialog.Content>
+					<Dialog.Header>Settings</Dialog.Header>
+					<div class="flex justify-between">
+						<Label>Pause between messages</Label>
+						<Input class="w-min text-right" type="number" bind:value={pause} />
+					</div>
+					<Slider type="single" bind:value={pause} max={5000} step={1} />
+				</Dialog.Content>
+			</Dialog.Root>
 
-		<button class="size-6 px-0" onclick={toggleMode}>
-			<Circle class={dark ? 'hover:fill-background' : 'fill-background hover:fill-foreground'} />
-		</button>
+			<button class="size-6 px-0" onclick={toggleMode}>
+				<Circle class={dark ? 'hover:fill-background' : 'fill-background hover:fill-foreground'} />
+			</button>
+		</div>
 	</div>
 </div>
-<br />
-<br />
 <div
-	class="my-2.5 grid h-[80vh] w-full grid-cols-[1fr_38.2%] grid-rows-[min-content_auto] gap-8 p-4"
+	style="padding: calc(var(--spacing) * 8);"
+	class="grid h-[88vh] w-full grid-cols-[1fr_38.2%] grid-rows-[min-content_auto] gap-8 p-4"
 >
 	<div class="flex items-end justify-between">
 		<div class="flex items-end gap-2">

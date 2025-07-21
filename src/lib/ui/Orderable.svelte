@@ -115,19 +115,11 @@
 		}
 	}
 
-	function getName(message: Message): string | null {
-		if (typeof message.content == 'string') return null;
-		if (message.content.name) {
-			return message.content.name.toString();
-		}
-		return null;
-	}
-
 	function info(message: Message, index: number): string[] {
 		const parts: string[] = [];
 		if (message.model) parts.push(message.model);
 		parts.push(cmd(message, index));
-		const name = getName(message);
+		const name = message.content.name ? message.content.name.toString() : null;
 		if (name != null) {
 			parts.push(name);
 		}
@@ -176,7 +168,7 @@
 				<Table.Cell>{cmd(item, i)}</Table.Cell>-->
 				<Table.Cell>
 					{#each info(item, i) as part, j (j)}
-						<Badge variant="secondary" class="mx-2">{part}</Badge>
+						<Badge variant="secondary" class={(j == 2 ? 'bg-accent' : '') + ' mx-2'}>{part}</Badge>
 					{/each}
 				</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
