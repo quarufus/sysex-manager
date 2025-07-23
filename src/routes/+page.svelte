@@ -97,9 +97,36 @@
 			return;
 		}
 
-		if (outgoingMessages[0].command == Command.BANK_BACKUP && outgoingMessages.length != 65) {
-			displayAlert('A Bank Backup command needs to include 64 presets.');
-			return;
+		if (outgoingMessages[0].command != Command.UPDATE) {
+			if (outgoingMessages[0].command == Command.BANK_BACKUP && outgoingMessages.length != 65) {
+				displayAlert(
+					'Invalid message',
+					'A Bank Backup command needs to include 64 presets.',
+					AlertType.WARN
+				);
+				return;
+			}
+
+			if (
+				outgoingMessages[0].command != Command.BANK_BACKUP &&
+				outgoingMessages[0].command != Command.PRESET_BACKUP
+			) {
+				displayAlert(
+					'Invalid message',
+					'The first message needs to be a Bank or Preset Backup command.',
+					AlertType.WARN
+				);
+				return;
+			}
+
+			if (outgoingMessages[0].command == Command.PRESET_BACKUP && outgoingMessages.length < 2) {
+				displayAlert(
+					'Invalid message',
+					'A Preset Backup command should be followed by a preset.',
+					AlertType.WARN
+				);
+				return;
+			}
 		}
 
 		const strings: string[] = outgoingMessages.map((m: Message) =>
@@ -267,6 +294,12 @@
 			command: command
 		};
 	}
+
+	function isSysex(s: string): boolean {
+		const t = s.split(' ');
+		if (t[0] != 'F0' || t[t.length - 1] != 'F7') return false;
+		return true;
+	}
 </script>
 
 <div class="flex h-[12vh] items-start">
@@ -331,18 +364,19 @@
 				<Dialog.Trigger class={buttonVariants({ variant: 'default' })}
 					>Create Command</Dialog.Trigger
 				>
-				<Dialog.Content class="h-[50vh] w-[50vw]">
+				<Dialog.Content class="max-h-[50vh] w-[50vw]">
 					<Dialog.Header>
 						<Dialog.Title>Create Command</Dialog.Title>
 						<Dialog.Description
 							>Create custom sysex commands to send to your device.</Dialog.Description
 						>
 					</Dialog.Header>
-					<Textarea placeholder="Type your command here." bind:value={customCmd} />
+					<Textarea placeholder="Type your command here." bind:value={customCmd} class="h-[30vh]" />
 					<Dialog.Footer>
 						<Dialog.Close>
 							<Button
 								type="submit"
+								disabled={!isSysex(customCmd)}
 								onclick={() => {
 									outgoingMessages.push(
 										parseMessage(
@@ -443,7 +477,7 @@
 										<Dialog.Header>
 											<Dialog.Title>Inspect MIDI message</Dialog.Title>
 										</Dialog.Header>
-										<ScrollArea class="h-[50vh] font-mono"
+										<ScrollArea class="max-h-[50vh] font-mono"
 											><div class="wrap-anywhere">
 												{bytesToString(item.raw).join(' ')}
 											</div></ScrollArea

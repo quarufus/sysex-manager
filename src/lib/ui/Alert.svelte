@@ -17,13 +17,13 @@
 
 <AlertDialog.Root bind:open>
 	<AlertDialog.Content
-		class="h-[50vh] w-[50vw]"
+		class="max-h-[50vh] w-[50vw]"
 		onEscapeKeydown={() => {
 			alertTitle.set('');
 		}}
 	>
 		<AlertDialog.Header class={color}>{$alertTitle}</AlertDialog.Header>
-		<ScrollArea class="h-[30vh]">
+		<ScrollArea class="max-h-[30vh]">
 			<div class="whitespace-pre-line">{$alertDescription}</div>
 		</ScrollArea>
 		<AlertDialog.Footer>

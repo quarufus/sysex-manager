@@ -174,7 +174,7 @@
 									<Badge
 										variant="secondary"
 										class={(j == 2 ? 'bg-accent text-accent-foreground' : '') +
-											' mx-2 rounded-xl pt-1'}>{value}</Badge
+											' mr-2 rounded-xl pt-1'}>{value}</Badge
 									>
 								</Tooltip.Trigger>
 								<Tooltip.Content>{name}</Tooltip.Content>
@@ -184,7 +184,7 @@
 				</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
 				<Table.Cell>
-					{#if item.command == Command.UPDATE || item.command == Command.PRESET_BACKUP}
+					{#if item.command == Command.UPDATE || item.command == Command.PRESET_BACKUP || item.command == Command.UNKNOWN}
 						<Button
 							class="mr-2 size-8"
 							variant="outline"
@@ -224,8 +224,11 @@
 </Table.Root>
 
 <Dialog.Root bind:open={viewer}>
-	<Dialog.Content class="p-10 font-mono">
-		<ScrollArea class="h-[50vh]">
+	<Dialog.Content class="p-10">
+		<Dialog.Header>
+			<Dialog.Title>Inspect MIDI message</Dialog.Title>
+		</Dialog.Header>
+		<ScrollArea class="max-h-[50vh] font-mono">
 			<div class="grid grid-cols-[75%_25%]">
 				<div>{bytesToString(tempMessage.raw).join(' ')}</div>
 				<div class="break-all">{bytesToAscii(tempMessage.raw)}</div>
@@ -237,7 +240,7 @@
 <Dialog.Root bind:open={editor}>
 	<Dialog.Content class="max-h-[90vh] lg:max-w-[80vw]">
 		<Dialog.Header>
-			<Dialog.Title>Inspect SysEx Message</Dialog.Title>
+			<Dialog.Title>Inspect and edit Preset</Dialog.Title>
 		</Dialog.Header>
 		<div class="mt-4 grid grid-cols-2 gap-4">
 			<ScrollArea class="max-h-[70vh] font-mono">
