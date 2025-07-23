@@ -23,6 +23,7 @@
 	import { type $ZodIssue } from 'zod/v4/core';
 	import Icon from '@iconify/svelte';
 	import { Badge } from '$lib/components/ui/badge/index';
+	import * as Tooltip from '$lib/components/ui/tooltip/index';
 
 	let { items = $bindable() }: { items: Message[] } = $props();
 	let editor: boolean = $state(false);
@@ -115,13 +116,18 @@
 		}
 	}
 
-	function info(message: Message, index: number): string[] {
-		const parts: string[] = [];
-		if (message.model) parts.push(message.model);
-		parts.push(cmd(message, index));
+	interface Part {
+		name: string;
+		value: string;
+	}
+
+	function info(message: Message, index: number): Part[] {
+		const parts: Part[] = [];
+		if (message.model) parts.push({ name: 'Model name', value: message.model });
+		parts.push({ name: 'Sysex command', value: cmd(message, index) });
 		const name = message.content.name ? message.content.name.toString() : null;
 		if (name != null) {
-			parts.push(name);
+			parts.push({ name: 'Preset name', value: name });
 		}
 		return parts;
 	}
@@ -132,9 +138,6 @@
 		<Table.Row>
 			<Table.Head class="w-0">#</Table.Head>
 			<Table.Head class="w-0">Manufacturer</Table.Head>
-			<!--<Table.Head>Model</Table.Head>
-			<Table.Head>Name</Table.Head>
-			<Table.Head>Command</Table.Head>-->
 			<Table.Head class="w-max">Info</Table.Head>
 			<Table.Head class="w-0">Length</Table.Head>
 			<Table.Head class="w-0"></Table.Head>
@@ -163,19 +166,27 @@
 			>
 				<Table.Cell>{i}</Table.Cell>
 				<Table.Cell>{item.manufacturer}</Table.Cell>
-				<!--<Table.Cell>{item.model}</Table.Cell>
-				<Table.Cell>{getName(item)}</Table.Cell>
-				<Table.Cell>{cmd(item, i)}</Table.Cell>-->
 				<Table.Cell>
-					{#each info(item, i) as part, j (j)}
-						<Badge variant="secondary" class={(j == 2 ? 'bg-accent' : '') + ' mx-2'}>{part}</Badge>
+					{#each info(item, i) as { name, value }, j (j)}
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Badge
+										variant="secondary"
+										class={(j == 2 ? 'bg-accent text-accent-foreground' : '') +
+											' mx-2 rounded-xl pt-1'}>{value}</Badge
+									>
+								</Tooltip.Trigger>
+								<Tooltip.Content>{name}</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					{/each}
 				</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
 				<Table.Cell>
 					{#if item.command == Command.UPDATE || item.command == Command.PRESET_BACKUP}
 						<Button
-							class="mr-2"
+							class="mr-2 size-8"
 							variant="outline"
 							onclick={() => {
 								tempMessage = {
@@ -190,7 +201,7 @@
 						</Button>
 					{:else}
 						<Button
-							class="mr-2"
+							class="mr-2 size-8"
 							variant="outline"
 							onmousedown={() => {
 								tempMessage = {

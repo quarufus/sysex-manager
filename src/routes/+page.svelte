@@ -435,7 +435,8 @@
 							<Table.Cell>
 								<Dialog.Root>
 									<Dialog.Trigger
-										><Button variant="outline" class="mr-2"><Icon icon="lucide:inspect" /></Button
+										><Button variant="outline" class="mr-2 size-8"
+											><Icon icon="lucide:inspect" /></Button
 										></Dialog.Trigger
 									>
 									<Dialog.Content class="lg:max-w-[70vw]">
