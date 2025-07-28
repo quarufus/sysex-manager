@@ -41,6 +41,9 @@
 	let customCmd: string = $state('');
 	let files: FileList | undefined = $state();
 
+	let file_content: ArrayBuffer;
+	let fileInput: HTMLInputElement;
+
 	onMount(() => {
 		if (
 			localStorage.theme ||
@@ -193,14 +196,14 @@
 	async function loadFile(event: Event) {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
-		if (!file) return;
+		if (!file && file_content.byteLength == 0) return;
 		outgoingMessages = [];
 		loading = true;
 		await tick();
 
 		try {
-			const content = await readFile(file);
-			const bytes = new Uint8Array(content);
+			if (file) file_content = await readFile(file);
+			const bytes = new Uint8Array(file_content);
 			if (bytes[0] != 240 || bytes[bytes.length - 1] != 247) {
 				displayAlert('Warning', 'File does not contain SysEx messages', AlertType.WARN);
 				return;
@@ -358,7 +361,16 @@
 		<div class="flex items-end gap-2">
 			<div class="grid w-full max-w-sm items-center gap-1.5">
 				<label for="file">Open File</label>
-				<Input id="file" type="file" accept=".syx" bind:files onchange={loadFile} />
+				<input
+					id="file"
+					type="file"
+					accept=".syx"
+					bind:files
+					onchange={loadFile}
+					bind:this={fileInput}
+					onclick={() => (fileInput.value = '')}
+					class="selection:bg-primary dark:bg-input/30 selection:text-primary-foreground border-input ring-offset-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 pt-1.5 text-sm font-medium shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+				/>
 			</div>
 			<Dialog.Root>
 				<Dialog.Trigger class={buttonVariants({ variant: 'default' })}
