@@ -163,11 +163,23 @@
 		sendStatus = 'Sending';
 
 		let i = 0;
+		const startTime = Date.now();
+		const minTime = Math.max(outgoingMessages.length * 200, 2000);
 		setTimeout(function run() {
 			if (device) device.send(outgoingMessages[i].raw);
 			if (i == outgoingMessages.length - 1) {
-				sendStatus = 'Send';
-				return;
+				if (Date.now() - startTime < minTime) {
+					setTimeout(
+						() => {
+							sendStatus = 'Send';
+							return;
+						},
+						minTime - (Date.now() - startTime)
+					);
+				} else {
+					sendStatus = 'Send';
+					return;
+				}
 			}
 			i++;
 			setTimeout(run, pause);
@@ -415,7 +427,9 @@
 		</div>
 		<Button
 			disabled={sendStatus == 'Sending'}
-			class="hover:bg-text hover:text-background"
+			class={sendStatus == 'Sending'
+				? 'bg-destructive'
+				: '' + 'hover:bg-text hover:text-background'}
 			onclick={() => {
 				sendSysEx();
 			}}

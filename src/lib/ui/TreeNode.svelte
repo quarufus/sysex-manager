@@ -38,15 +38,29 @@
 	}
 
 	const isLeaf = !['object', 'array'].includes(schema._zod.def.type);
+	const isDefault = ['default'].includes(schema._zod.def.type);
 	const pathkey = path[path.length - 1] || 'Preset';
 </script>
 
-{#if isLeaf}
+{#if isLeaf && !isDefault}
 	<div class="grid grid-cols-[200px_auto] gap-2 p-2 ml-{(path.length - 1) * 10 + 3}">
 		<Label>{pathkey}</Label>
 		<Leaf
 			{schema}
 			{value}
+			onChange={(newValue) => {
+				updateData(path, newValue);
+			}}
+			{validationErrors}
+			{path}
+		/>
+	</div>
+{:else if isDefault}
+	<div class="grid grid-cols-[200px_auto] gap-2 p-2 ml-{(path.length - 1) * 10 + 3}">
+		<Label>{pathkey}</Label>
+		<Leaf
+			schema={schema._def.innerType}
+			value={schema._def.defaultValue}
 			onChange={(newValue) => {
 				updateData(path, newValue);
 			}}
