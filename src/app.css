@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
@@ -7,6 +8,8 @@
 @source inline('ml-20 ml-10 ml-30 ml-40 ml-50 ml-60 ml-70 ml-3 ml-13 ml-23 ml-33 ml-43 ml-53 ml-63 ml-73');
 
 :root {
+	font-family: 'Poppins';
+	font-weight: 600;
 	--radius: 0.25rem;
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
@@ -22,7 +25,7 @@
 	--muted-foreground: oklch(0.556 0 0);
 	--accent: oklch(0.97 0 0); /*oklch(0.4852 0.1743 25.51); /*oklch(0.269 0 0);*/
 	--accent-foreground: oklch(0.205 0 0);
-	--destructive: oklch(0.577 0.245 27.325);
+	--destructive: oklch(0.4852 0.1743 25.51);
 	--border: oklch(0.922 0 0);
 	--input: oklch(0.922 0 0);
 	--ring: oklch(0.708 0 0);
@@ -57,7 +60,7 @@
 	--muted-foreground: oklch(0.708 0 0);
 	--accent: oklch(0.371 0 0); /*oklch(0.4852 0.1743 25.51); /*oklch(0.269 0 0);*/
 	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
+	--destructive: oklch(0.4852 0.1743 25.51);
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.556 0 0);

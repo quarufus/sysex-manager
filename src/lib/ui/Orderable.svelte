@@ -133,7 +133,7 @@
 	}
 </script>
 
-<Table.Root class="font-mono">
+<Table.Root class="font-mono font-normal">
 	<Table.Header>
 		<Table.Row>
 			<Table.Head class="w-0">#</Table.Head>

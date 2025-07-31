@@ -44,7 +44,7 @@
 	let file_content: ArrayBuffer;
 	let fileInput: HTMLInputElement;
 
-	let sendTimeout: number;
+	let sendIndex: number = $state(0);
 
 	onMount(() => {
 		if (
@@ -162,29 +162,32 @@
 			}
 		}
 
-		sendStatus = 'Stop';
+		sendStatus = 'Sending';
 
 		let i = 0;
 		const startTime = Date.now();
 		const minTime = Math.max(outgoingMessages.length * 200, 2000);
-		sendTimeout = setTimeout(function run() {
+		setTimeout(function run() {
 			device.send(outgoingMessages[i].raw);
+			sendIndex += 1;
 			if (i == outgoingMessages.length - 1) {
 				if (Date.now() - startTime < minTime) {
 					setTimeout(
 						() => {
 							sendStatus = 'Send';
+							sendIndex = 0;
 							return;
 						},
 						minTime - (Date.now() - startTime)
 					);
 				} else {
 					sendStatus = 'Send';
+					sendIndex = 0;
 					return;
 				}
 			}
 			i++;
-			sendTimeout = setTimeout(run, pause);
+			setTimeout(run, pause);
 		}, pause);
 	}
 
@@ -428,20 +431,18 @@
 			>
 		</div>
 		<Button
-			variant={sendStatus == 'Stop' ? 'destructive' : 'default'}
+			variant={sendStatus == 'Sending' ? 'destructive' : 'default'}
 			onclick={() => {
 				if (sendStatus == 'Send') {
 					sendSysEx();
-				} else {
-					clearTimeout(sendTimeout);
-					sendStatus = 'Send';
 				}
 			}}
 		>
 			{#if sendStatus == 'Send'}
-				{sendStatus} -&gt;
+				{sendStatus} <Icon icon="lucide:arrow-right" />
 			{:else}
-				{sendStatus} <Load class="animate-spin" />
+				<Load class="animate-spin" />
+				{sendStatus + ' ' + ' ' + sendIndex.toString() + '/' + outgoingMessages.length.toString()}
 			{/if}
 		</Button>
 	</div>
@@ -449,7 +450,7 @@
 		<Button
 			onclick={() => {
 				outgoingMessages = messages;
-			}}>&lt;- Copy Over</Button
+			}}><Icon icon="lucide:arrow-left" /> Copy Over</Button
 		>
 		<Button
 			class="hover:bg-text hover:text-background w-min"
@@ -471,7 +472,7 @@
 	</div>
 	<div class="win border-shade view overflow-auto rounded-sm border text-wrap" id="in">
 		<ScrollArea class="h-full">
-			<Table.Root class="font-mono">
+			<Table.Root class="font-mono font-normal">
 				<Table.Header>
 					<Table.Row>
 						<Table.Head class="w-0">#</Table.Head>
