@@ -173,7 +173,7 @@
 								<Tooltip.Trigger>
 									<Badge
 										variant="secondary"
-										class={(j == 2 ? 'bg-accent text-accent-foreground' : '') +
+										class={(j == 2 ? 'bg-primary text-primary-foreground' : '') +
 											' mr-2 rounded-xl pt-1'}>{value}</Badge
 									>
 								</Tooltip.Trigger>

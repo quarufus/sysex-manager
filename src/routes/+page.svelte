@@ -44,6 +44,8 @@
 	let file_content: ArrayBuffer;
 	let fileInput: HTMLInputElement;
 
+	let sendTimeout: number;
+
 	onMount(() => {
 		if (
 			localStorage.theme ||
@@ -91,7 +93,7 @@
 
 	function sendSysEx() {
 		const device = midiOutputs.find((d) => d.id == selectedOutput);
-		if (!selectedOutput) {
+		if (!device) {
 			displayAlert('Choose a MIDI out device to send data.');
 			return;
 		}
@@ -160,13 +162,13 @@
 			}
 		}
 
-		sendStatus = 'Sending';
+		sendStatus = 'Stop';
 
 		let i = 0;
 		const startTime = Date.now();
 		const minTime = Math.max(outgoingMessages.length * 200, 2000);
-		setTimeout(function run() {
-			if (device) device.send(outgoingMessages[i].raw);
+		sendTimeout = setTimeout(function run() {
+			device.send(outgoingMessages[i].raw);
 			if (i == outgoingMessages.length - 1) {
 				if (Date.now() - startTime < minTime) {
 					setTimeout(
@@ -182,7 +184,7 @@
 				}
 			}
 			i++;
-			setTimeout(run, pause);
+			sendTimeout = setTimeout(run, pause);
 		}, pause);
 	}
 
@@ -426,12 +428,14 @@
 			>
 		</div>
 		<Button
-			disabled={sendStatus == 'Sending'}
-			class={sendStatus == 'Sending'
-				? 'bg-destructive'
-				: '' + 'hover:bg-text hover:text-background'}
+			variant={sendStatus == 'Stop' ? 'destructive' : 'default'}
 			onclick={() => {
-				sendSysEx();
+				if (sendStatus == 'Send') {
+					sendSysEx();
+				} else {
+					clearTimeout(sendTimeout);
+					sendStatus = 'Send';
+				}
 			}}
 		>
 			{#if sendStatus == 'Send'}
