@@ -420,6 +420,7 @@
 				</Dialog.Content>
 			</Dialog.Root>
 			<Button
+				disabled={outgoingMessages.length == 0}
 				onclick={() => {
 					downloadBank(outgoingMessages);
 				}}><Icon icon="lucide:download" width="24" height="24" /></Button
@@ -472,27 +473,23 @@
 	</div>
 	<div class="win border-shade view overflow-auto rounded-sm border text-wrap" id="in">
 		<ScrollArea class="h-full">
-			<Table.Root class="font-mono font-normal">
+			<Table.Root>
 				<Table.Header>
 					<Table.Row>
 						<Table.Head class="w-0">#</Table.Head>
 						<Table.Head class="w-0">Manufacturer</Table.Head>
 						<Table.Head class="w-0">Model</Table.Head>
-						<!--<Table.Head>B/P</Table.Head>-->
-						<!--<Table.Head>Name</Table.Head>-->
 						<Table.Head>Content</Table.Head>
 						<Table.Head class="w-0">Length</Table.Head>
 						<Table.Head class="w-0"></Table.Head>
 					</Table.Row>
 				</Table.Header>
-				<Table.Body>
+				<Table.Body class="font-mono font-normal">
 					{#each messages as item, index (index)}
 						<Table.Row>
 							<Table.Cell>{index}</Table.Cell>
 							<Table.Cell>{item.manufacturer}</Table.Cell>
 							<Table.Cell>{item.model}</Table.Cell>
-							<!--<Table.Cell>{item.bankpreset}</Table.Cell>
-							<Table.Cell>{item.name}</Table.Cell>-->
 							<Table.Cell class="max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap"
 								>{bytesToString(item.raw).join(' ')}
 							</Table.Cell>
@@ -508,7 +505,7 @@
 										<Dialog.Header>
 											<Dialog.Title>Inspect MIDI message</Dialog.Title>
 										</Dialog.Header>
-										<ScrollArea class="max-h-[50vh] font-mono"
+										<ScrollArea class="max-h-[70vh] font-mono"
 											><div class="wrap-anywhere">
 												{bytesToString(item.raw).join(' ')}
 											</div></ScrollArea

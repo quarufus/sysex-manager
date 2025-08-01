@@ -133,7 +133,7 @@
 	}
 </script>
 
-<Table.Root class="font-mono font-normal">
+<Table.Root>
 	<Table.Header>
 		<Table.Row>
 			<Table.Head class="w-0">#</Table.Head>
@@ -143,7 +143,7 @@
 			<Table.Head class="w-0"></Table.Head>
 		</Table.Row>
 	</Table.Header>
-	<Table.Body>
+	<Table.Body class="font-mono font-normal">
 		{#each items as item, i (i)}
 			<tr
 				use:droppable={{
@@ -211,7 +211,8 @@
 								};
 								data = tempMessage.content;
 								index = i;
-								editor = !editor;
+								//editor = !editor;
+								viewer = !viewer;
 							}}
 						>
 							<Edit /></Button
@@ -224,16 +225,25 @@
 </Table.Root>
 
 <Dialog.Root bind:open={viewer}>
-	<Dialog.Content class="p-10">
+	<Dialog.Content class="p-10 lg:max-w-[70vw]">
 		<Dialog.Header>
 			<Dialog.Title>Inspect MIDI message</Dialog.Title>
 		</Dialog.Header>
-		<ScrollArea class="max-h-[50vh] font-mono">
-			<div class="grid grid-cols-[75%_25%]">
-				<div>{bytesToString(tempMessage.raw).join(' ')}</div>
-				<div class="break-all">{bytesToAscii(tempMessage.raw)}</div>
-			</div>
-		</ScrollArea>
+		{#if [Command.UPDATE, Command.PRESET_BACKUP].includes(tempMessage.command)}
+			<ScrollArea class="max-h-[70vh] font-mono font-normal">
+				<div class="grid grid-cols-[75%_25%]">
+					<div>{bytesToString(tempMessage.raw).join(' ')}</div>
+					<div class="break-all">{bytesToAscii(tempMessage.raw)}</div>
+				</div>
+			</ScrollArea>
+		{:else}
+			<ScrollArea class="max-h-[70vh] font-mono font-normal">
+				<div class="grid grid-cols-2 gap-4">
+					<div>{bytesToString(tempMessage.raw).join(' ')}</div>
+					<pre>{JSON.stringify(tempMessage.content, null, '\t')}</pre>
+				</div></ScrollArea
+			>
+		{/if}
 	</Dialog.Content>
 </Dialog.Root>
 
