@@ -76,17 +76,12 @@ export function downloadPreset(content: object, raw: Uint8Array) {
 	window.URL.revokeObjectURL(url);
 }
 
-export function saveMessage(message: Message, data: Record<string, number>) {
+export function saveMessage(message: Message, data: Record<string, string | number | null>) {
 	message.content = data;
 	const ids: number[] = [];
 	for (let i = 0; i < 6; i++) {
 		ids[i] = parseInt(message.raw[i].toString(16), 16);
 	}
-	console.log(
-		JSON.stringify(data)
-			.split('')
-			.map((c) => c.charCodeAt(0))
-	);
 	const raw = JSON.stringify(data)
 		.split('')
 		.map((c) => c.charCodeAt(0));

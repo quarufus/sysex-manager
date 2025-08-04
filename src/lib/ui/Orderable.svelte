@@ -24,16 +24,29 @@
 	import Icon from '@iconify/svelte';
 	import { Badge } from '$lib/components/ui/badge/index';
 	import * as Tooltip from '$lib/components/ui/tooltip/index';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index';
+	import Input from '$lib/components/ui/input/input.svelte';
 
 	let { items = $bindable() }: { items: Message[] } = $props();
 	let editor: boolean = $state(false);
 	let viewer: boolean = $state(false);
+	let name: boolean = $state(false);
+	let nameText: string = $state('');
 
 	let raw: boolean = $state(false);
 	let index: number = $state(-1);
-	let tempMessage = $state({ content: {}, command: Command.UNKNOWN, raw: new Uint8Array() });
 
-	let data = $state({});
+	interface Temp {
+		content: Record<string, string | number | null>;
+		command: Command;
+		raw: Uint8Array;
+	}
+
+	let tempMessage: Temp = $state({ content: {}, command: Command.UNKNOWN, raw: new Uint8Array() });
+
+	type Fake = Record<string, string | number | null>;
+
+	let data: Fake = $state({});
 	let validationErrors: $ZodIssue[] = $state([]);
 	const valid: boolean = $derived(validationErrors.length != 0);
 
@@ -97,7 +110,7 @@
 	};
 
 	function cmd(item: Message, i: number): string {
-		const bank = String.fromCharCode(items[0].content.BankBackup + 65);
+		const bank = String.fromCharCode((items[0].content.BankBackup as number) + 65);
 		switch (item.command) {
 			case Command.BANK_BACKUP:
 				return `Bank ${bank} Backup`;
@@ -183,15 +196,15 @@
 					{/each}
 				</Table.Cell>
 				<Table.Cell class="text-right font-mono">{formatSize(item.raw.length)}</Table.Cell>
-				<Table.Cell>
-					{#if item.command == Command.UPDATE || item.command == Command.PRESET_BACKUP || item.command == Command.UNKNOWN}
+				<Table.Cell class="text-center">
+					{#if item.command == Command.UPDATE || item.command == Command.PRESET_BACKUP || item.command == Command.UNKNOWN || item.command == Command.BANK_BACKUP}
 						<Button
-							class="mr-2 size-8"
+							class="mx-2 size-8"
 							variant="outline"
 							onclick={() => {
 								tempMessage = {
 									command: item.command,
-									content: {},
+									content: item.content,
 									raw: Uint8Array.from(item.raw)
 								};
 								viewer = !viewer;
@@ -200,23 +213,53 @@
 							<Icon icon="lucide:inspect" />
 						</Button>
 					{:else}
-						<Button
-							class="mr-2 size-8"
-							variant="outline"
-							onmousedown={() => {
-								tempMessage = {
-									command: item.command,
-									content: item.content,
-									raw: Uint8Array.from(item.raw)
-								};
-								data = tempMessage.content;
-								index = i;
-								//editor = !editor;
-								viewer = !viewer;
-							}}
-						>
-							<Edit /></Button
-						>
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger class="">
+								<Icon icon="lucide:more-horizontal" class="size-5" />
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content>
+								<DropdownMenu.Group>
+									<DropdownMenu.Item
+										onclick={() => {
+											tempMessage = {
+												command: item.command,
+												content: item.content,
+												raw: Uint8Array.from(item.raw)
+											};
+											data = tempMessage.content;
+											index = i;
+											name = !name;
+										}}
+									>
+										<Edit /> Edit name
+									</DropdownMenu.Item>
+									<DropdownMenu.Item
+										onclick={() => {
+											tempMessage = {
+												command: item.command,
+												content: item.content,
+												raw: Uint8Array.from(item.raw)
+											};
+											viewer = !viewer;
+										}}
+									>
+										<Icon icon="lucide:inspect" /> View contents
+									</DropdownMenu.Item>
+									<DropdownMenu.Item
+										onclick={() => {
+											tempMessage = {
+												command: item.command,
+												content: item.content,
+												raw: Uint8Array.from(item.raw)
+											};
+											data = tempMessage.content;
+											index = i;
+											editor = !editor;
+										}}>&thinsp;~&emsp;Full edit</DropdownMenu.Item
+									>
+								</DropdownMenu.Group>
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
 					{/if}
 				</Table.Cell>
 			</tr>
@@ -244,6 +287,25 @@
 				</div></ScrollArea
 			>
 		{/if}
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={name}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Edit the name of the preset</Dialog.Title>
+		</Dialog.Header>
+		Previous name: {tempMessage.content.name ?? 'none'}
+		<Input type="text" max="10" placeholder="Enter new name" bind:value={nameText} />
+		<Dialog.Footer>
+			<Button
+				onclick={() => {
+					data.name = nameText;
+					saveMessage(items[index], data);
+					name = !name;
+				}}>Save</Button
+			>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
 

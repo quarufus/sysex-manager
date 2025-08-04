@@ -4,7 +4,7 @@ export interface Message {
 	model: string;
 	data: string[];
 	raw: Uint8Array;
-	content: Record<string, number>;
+	content: Record<string, string | number | null>;
 	command: Command;
 }
 
