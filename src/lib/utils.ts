@@ -96,6 +96,7 @@ export function bytesToAscii(bytes: Uint8Array): string {
 	return Array.from(bytes)
 		.map((b) => {
 			if (b < 33) return '•';
+			if (b >= 127) return '•';
 			return String.fromCharCode(b);
 		})
 		.join('');

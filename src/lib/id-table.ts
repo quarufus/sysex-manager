@@ -28,11 +28,15 @@ export function getManufacturer(id: Uint8Array | ManufacturerId): string {
 export function getModel(manufacturer: string, id: ModelId): string {
 	const key: string = id.slice(0, 2).join(',').toUpperCase();
 
+	console.log(manufacturer);
 	return MIDI_MODELS[manufacturer][key] || 'Unknown Model';
 }
 
 export function getInfo(data: Uint8Array): [string, string] {
 	const manufacturer = getManufacturer(data);
+	if (manufacturer == 'Unknown Manufacturer') {
+		return ['Unknown Manufacturer', 'Unknown Model'];
+	}
 	const start = data[1] == 0 ? 4 : 2;
 	const modelId = Array.from(data.slice(start, start + 2)).map((v) =>
 		v.toString(16).padStart(2, '0').toUpperCase()
@@ -50,6 +54,9 @@ const MIDI_MODELS: Record<string, Record<string, string>> = {
 		'11,00': 'Model:Cycles',
 		'0F,00': 'Model:Samples',
 		'05,00': 'Oktatrack'
+	},
+	'Sequential Circuits': {
+		'2E,7B': 'OB'
 	}
 };
 
