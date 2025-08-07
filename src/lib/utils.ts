@@ -124,6 +124,10 @@ export function validateMessages(messages: Message[]) {
 		const message = Array.from(m.raw).map((v) => v.toString(16).padStart(2, '0'));
 		const text = message.map((v: string) => String.fromCharCode(parseInt(v, 16))).join('');
 		let command: Command;
+		if (i > 1 && messages[i - 1].command == Command.PRESET_BACKUP) {
+			m.command = Command.ACTIVE;
+			return;
+		}
 		switch (true) {
 			case text.substring(8, 18) == 'BankBackup':
 				command = Command.BANK_BACKUP;
@@ -134,9 +138,9 @@ export function validateMessages(messages: Message[]) {
 			case text.includes('base') && i == 0:
 				command = Command.PRESET;
 				break;
-			case messages[i - 1].command == Command.PRESET_BACKUP:
-				command = Command.ACTIVE;
-				break;
+			//case messages[i - 1].command == Command.PRESET_BACKUP:
+			//	command = Command.ACTIVE;
+			//	break;
 			case text.includes('base'):
 				command = Command.PRESET;
 				break;

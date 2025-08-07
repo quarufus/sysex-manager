@@ -125,7 +125,7 @@
 			case Command.UNKNOWN:
 				return 'Unknown command';
 			default:
-				return '';
+				return 'Unknown command';
 		}
 	}
 
@@ -169,7 +169,8 @@
 					disabled:
 						item.command == Command.BANK_BACKUP ||
 						item.command == Command.PRESET_BACKUP ||
-						item.command == Command.UPDATE
+						item.command == Command.UPDATE ||
+						item.command == Command.UNKNOWN
 				}}
 				animate:flip={{ duration: 200 }}
 				in:fade={{ duration: 150 }}
@@ -272,7 +273,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Inspect MIDI message</Dialog.Title>
 		</Dialog.Header>
-		{#if [Command.UPDATE, Command.PRESET_BACKUP].includes(tempMessage.command)}
+		{#if [Command.UPDATE, Command.PRESET_BACKUP, Command.UNKNOWN].includes(tempMessage.command)}
 			<ScrollArea class="max-h-[70vh] font-mono font-normal">
 				<div class="grid grid-cols-[75%_25%]">
 					<div>{bytesToString(tempMessage.raw).join(' ')}</div>

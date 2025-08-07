@@ -1,7 +1,7 @@
 type ManufacturerId = string[];
 type ModelId = string[];
 
-export function getManufacturer(id: Uint8Array | ManufacturerId): string {
+export function getManufacturer(id: Uint8Array | ManufacturerId): string | undefined {
 	let key: string;
 	if (id instanceof Uint8Array) {
 		if (id[1].toString(16) == '0') {
@@ -10,10 +10,10 @@ export function getManufacturer(id: Uint8Array | ManufacturerId): string {
 				.join(',')
 				.toUpperCase();
 		} else {
-			key = id[1].toString(16);
+			key = id[1].toString(16).padStart(2, '0');
 		}
 
-		return MIDI_MANUFACTURERS[key] || 'Unknown Manufacturer';
+		return MIDI_MANUFACTURERS[key];
 	} else {
 		if (id[1] === '00') {
 			key = id.slice(1, 4).join(',').toUpperCase();
@@ -21,20 +21,22 @@ export function getManufacturer(id: Uint8Array | ManufacturerId): string {
 			key = id[1].toString();
 		}
 
-		return MIDI_MANUFACTURERS[key] || 'Unknown Manufacturer';
+		return MIDI_MANUFACTURERS[key];
 	}
 }
 
-export function getModel(manufacturer: string, id: ModelId): string {
+export function getModel(manufacturer: string, id: ModelId): string | undefined {
 	const key: string = id.slice(0, 2).join(',').toUpperCase();
+	if (MIDI_MODELS[manufacturer][id[0]]) {
+		return MIDI_MODELS[manufacturer][id[0].toUpperCase()];
+	}
 
-	console.log(manufacturer);
-	return MIDI_MODELS[manufacturer][key] || 'Unknown Model';
+	return MIDI_MODELS[manufacturer][key];
 }
 
 export function getInfo(data: Uint8Array): [string, string] {
 	const manufacturer = getManufacturer(data);
-	if (manufacturer == 'Unknown Manufacturer') {
+	if (manufacturer == undefined) {
 		return ['Unknown Manufacturer', 'Unknown Model'];
 	}
 	const start = data[1] == 0 ? 4 : 2;
@@ -42,6 +44,9 @@ export function getInfo(data: Uint8Array): [string, string] {
 		v.toString(16).padStart(2, '0').toUpperCase()
 	);
 	const model = getModel(manufacturer, modelId);
+	if (model == undefined) {
+		return [manufacturer, 'Unknown Model'];
+	}
 	return [manufacturer, model];
 }
 
@@ -56,7 +61,7 @@ const MIDI_MODELS: Record<string, Record<string, string>> = {
 		'05,00': 'Oktatrack'
 	},
 	'Sequential Circuits': {
-		'2E,7B': 'OB'
+		'2E': 'OB-6'
 	}
 };
 

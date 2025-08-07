@@ -79,7 +79,7 @@
 
 		const device = midiInputs.find((d) => d.id == selectedInput);
 		if (!device?.manufacturer || !device.name) {
-			if (getManufacturer(msg.data) == 'Unknown Manufacturer') {
+			if (getManufacturer(msg.data) == undefined) {
 				return;
 			}
 		}
@@ -273,7 +273,10 @@
 		const [manufacturer, model] = getInfo(raw);
 		let command: Command;
 		switch (true) {
-			case text.substring(8, 18) == 'BankBackup':
+			case !manufacturer.includes('Dreadbox P.C.'):
+				command = Command.UNKNOWN;
+				break;
+			case text.substring(8, 18) === 'BankBackup':
 				command = Command.BANK_BACKUP;
 				break;
 			case text.substring(7, 19) == 'PresetBackup':
