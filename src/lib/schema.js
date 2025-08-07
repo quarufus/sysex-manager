@@ -17,11 +17,11 @@ export const Glide = z.enum(['On', 'Auto']);
 
 export const GenericEffectCoefficients = z.object({
 	param_1: SNorm,
-    param_2: SNorm,
-    param_3: SNorm,
-    param_4: SNorm,
-    param_5: SNorm
-})
+	param_2: SNorm,
+	param_3: SNorm,
+	param_4: SNorm,
+	param_5: SNorm
+});
 
 // —— Effects Parameters ——
 export const DistortionType = z.enum([
@@ -120,7 +120,7 @@ export const ModulationsParameters = z.object({
 	barber_pole_phaser: BarberPolePhaserParameters,
 	double_notch: DoubleNotchParameters,
 	pitch_shifter: PitchShifterParameters,
-	mix: Norm,
+	mix: Norm
 });
 
 export const DelaysType = z.enum(['Stereo', 'PingPong', 'BBDDelay', 'RandomRepeater']);
@@ -160,7 +160,7 @@ export const DelaysParameters = z.object({
 	bbd: BbdDelayParameters,
 	random_repeater: RandomRepeaterParameters,
 	mix: Norm,
-	bpm_sync: z.boolean().default(false),
+	bpm_sync: z.boolean().default(false)
 });
 
 export const ReverbsType = z.enum(['Small', 'Large', 'Huge', 'Granular', 'Shimmer']);
@@ -200,7 +200,7 @@ export const ReverbsParameters = z.object({
 	huge: HugeReverbParameters,
 	shimmer: ShimmerReverbParameters,
 	granular: GranularReverbParameters,
-	mix: Norm,
+	mix: Norm
 });
 
 // --- Modulation Coefficients
@@ -244,10 +244,10 @@ export const ModulationCoefficients = z.object({
 	eg_s: SNorm,
 	eg_r: SNorm,
 
-    distortions_generic: GenericEffectCoefficients,
-    modulations_generic: GenericEffectCoefficients,
-    delays_generic: GenericEffectCoefficients,
-    reverbs_generic: GenericEffectCoefficients,
+	distortions_generic: GenericEffectCoefficients,
+	modulations_generic: GenericEffectCoefficients,
+	delays_generic: GenericEffectCoefficients,
+	reverbs_generic: GenericEffectCoefficients
 });
 
 export const PlayMode = z.enum(['Poly', '_3x2', '_2x3', 'Unison', 'Mono']);
@@ -257,7 +257,7 @@ export const SEQUENCER_MAX_LENGTH = 64;
 export const Gate = z.number().min(0.05).max(1);
 export const SequencerLength = z.number().int().min(1).max(SEQUENCER_MAX_LENGTH);
 export const SeqType = z.enum(['None', 'Sequencer', 'Arpeggiator']);
-export const ArpMode = z.enum(['Up','Down','Order','Inc','Exc','Random']);
+export const ArpMode = z.enum(['Up', 'Down', 'Order', 'Inc', 'Exc', 'Random']);
 export const NoteInfo = z.object({
 	note: u7,
 	vel: u7
@@ -287,10 +287,10 @@ export const SeqDivisions = z.enum([
 
 export const ArpeggiatorParameters = z.object({
 	play_mode: ArpMode,
-    divisions: SeqDivisions,
-    probability: Norm,
-    swing: Norm,
-    gate: Gate,
+	divisions: SeqDivisions,
+	probability: Norm,
+	swing: Norm,
+	gate: Gate
 });
 
 export const SequencerParameters = z.object({
@@ -320,81 +320,82 @@ export const Wave = z.enum([
 	'EnvMinus'
 ]);
 
-
 export const BaseParameters = z.object({
 	lfo_1_rate: Norm,
-    lfo_1_fade: Norm,
-    lfo_1_wave: Wave,
-    lfo_1_vco_target: LfoVcoTarget,
-    lfo_1_vco_amount: Norm,
-    lfo_1_vcf_amount: Norm,
+	lfo_1_fade: Norm,
+	lfo_1_wave: Wave,
+	lfo_1_vco_target: LfoVcoTarget,
+	lfo_1_vco_amount: Norm,
+	lfo_1_vcf_amount: Norm,
 
-    lfo_2_rate: Norm,
-    lfo_2_xmod: Norm,
-    lfo_2_wave: Wave,
-    lfo_2_sync_mode: SyncMode,
-    lfo_2_morph_amount: Norm,
-    lfo_2_vco_1_pw_amount: Norm,
+	lfo_2_rate: Norm,
+	lfo_2_xmod: Norm,
+	lfo_2_wave: Wave,
+	lfo_2_sync_mode: SyncMode,
+	lfo_2_morph_amount: Norm,
+	lfo_2_vco_1_pw_amount: Norm,
 
-    vco_sub_noise: SNorm,
-    vco_mix: Norm,
-    vco_morph: Norm,
-    vco_sync: z.boolean(),
-    vco_2_tune: SNorm,
-    vco_detune: Norm,
-    vco_glide: Norm,
-    vco_pw: Norm,
-    vco_fm_eg: z.boolean(),
-    vco_fm: Norm,
+	vco_sub_noise: SNorm,
+	vco_mix: Norm,
+	vco_morph: Norm,
+	vco_sync: z.boolean(),
+	vco_2_tune: SNorm,
+	vco_detune: Norm,
+	vco_glide: Norm,
+	vco_pw: Norm,
+	vco_fm_eg: z.boolean(),
+	vco_fm: Norm,
 
-    lpf_cut: Norm,
-    lpf_cut_eg_amount: Norm,
-    lpf_reson: Norm,
-    lpf_poles: z.boolean(),
-    lpf_track: TrackMode,
-    lpf_ffm: Norm,
-    lpf_ffm_noise_source: z.boolean(),
+	lpf_cut: Norm,
+	lpf_cut_eg_amount: Norm,
+	lpf_reson: Norm,
+	lpf_poles: z.boolean(),
+	lpf_track: TrackMode,
+	lpf_ffm: Norm,
+	lpf_ffm_noise_source: z.boolean(),
 
-    hpf_cut: Norm,
-    hpf_reson: Norm,
+	hpf_cut: Norm,
+	hpf_reson: Norm,
 
-    spread: Norm,
+	spread: Norm,
 
-    vca_eg_a: Norm,
-    vca_eg_d: Norm,
-    vca_eg_s: Norm,
-    vca_eg_r: Norm,
+	vca_eg_a: Norm,
+	vca_eg_d: Norm,
+	vca_eg_s: Norm,
+	vca_eg_r: Norm,
 
-    eg_a: Norm,
-    eg_d: Norm,
-    eg_s: Norm,
-    eg_r: Norm,
+	eg_a: Norm,
+	eg_d: Norm,
+	eg_s: Norm,
+	eg_r: Norm,
 
-    play_mode: PlayMode,
+	play_mode: PlayMode,
 
-    legato: Legato,
+	legato: Legato,
 
-    glide: Glide,
+	glide: Glide,
 
-    drive_mode: DriveMode,
+	drive_mode: DriveMode,
 
-    level: PresetLevel,
+	level: PresetLevel,
 
-    bpm: Bpm,
+	bpm: Bpm,
 
-    instability_depth: Norm.default(0.0),
+	instability_depth: Norm.default(0.0),
 
-    amp_velocity: Norm,
+	amp_velocity: Norm,
 
-    distortions: DistortionsParameters,
-    modulations: ModulationsParameters,
-    delays: DelaysParameters,
-    reverbs: ReverbsParameters,
-    seq: SeqParameters,
+	distortions: DistortionsParameters,
+	modulations: ModulationsParameters,
+	delays: DelaysParameters,
+	reverbs: ReverbsParameters,
+	seq: SeqParameters
 });
 
+export const Name = z.string().max(10);
+
 export const PresetParameters = z.object({
-	name: z.string().max(10).optional(),
+	name: Name.optional(),
 	base: BaseParameters,
 	mod_wheel: ModulationCoefficients,
 	velocity: ModulationCoefficients,

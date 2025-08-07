@@ -1,11 +1,5 @@
 <script lang="ts">
-	import {
-		downloadPreset,
-		bytesToString,
-		saveMessage,
-		validateMessages,
-		bytesToAscii
-	} from '$lib/utils';
+	import { downloadPreset, bytesToString, saveMessage, bytesToAscii } from '$lib/utils';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { flip } from 'svelte/animate';
 	import { fade } from 'svelte/transition';
@@ -18,7 +12,7 @@
 	import { dndState } from '@thisux/sveltednd';
 	import { AlertType, displayAlert } from '$lib/stores/alert';
 	import TreeNode from './TreeNode.svelte';
-	import { Bank, PresetParameters } from '$lib/schema';
+	import { Bank, Name, PresetParameters } from '$lib/schema';
 	import { z } from 'zod/v4';
 	import { type $ZodIssue } from 'zod/v4/core';
 	import Icon from '@iconify/svelte';
@@ -102,7 +96,7 @@
 				const [item] = items.splice(dragIndex, 1);
 				items.splice(dropIndex, 0, item);
 			}
-			validateMessages(items);
+			//validateMessages(items);
 		},
 		onDragEnd: () => {
 			dndState.invalidDrop = true;
@@ -297,7 +291,17 @@
 			<Dialog.Title>Edit the name of the preset</Dialog.Title>
 		</Dialog.Header>
 		Previous name: {tempMessage.content.name ?? 'none'}
-		<Input type="text" max="10" placeholder="Enter new name" bind:value={nameText} />
+		<Input
+			type="text"
+			max="10"
+			placeholder={tempMessage.content.name?.toString() ?? 'Enter name here'}
+			bind:value={nameText}
+		/>
+		{#if Name.safeParse(nameText).error}
+			<div class="text-destructive text-sm">
+				{Name.safeParse(nameText).error?.issues[0].message}
+			</div>
+		{/if}
 		<Dialog.Footer>
 			<Button
 				onclick={() => {
