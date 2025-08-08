@@ -392,7 +392,10 @@ export const BaseParameters = z.object({
 	seq: SeqParameters
 });
 
-export const Name = z.string().max(10);
+export const Name = z
+	.string()
+	.max(10)
+	.regex(/^[\x20-\x7F]*$/, 'Invalid character.');
 
 export const PresetParameters = z.object({
 	name: Name.optional(),

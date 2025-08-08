@@ -75,7 +75,7 @@
 	function validateDrop(state: DragDropState<Message>) {
 		const { targetContainer } = state;
 
-		dndState.invalidDrop = targetContainer == '0' && items[0].command != Command.PRESET;
+		dndState.invalidDrop = targetContainer == '0';
 	}
 
 	const dragDropCallbacks = {
@@ -85,7 +85,7 @@
 		onDrop: (state: DragDropState<Message>) => {
 			if (dndState.invalidDrop) {
 				displayAlert('Warning', 'First message must be a Bank Backup message.', AlertType.WARN);
-				//alert('Error: first message must be a Bank Backup message');
+				dndState.invalidDrop = false;
 				return;
 			}
 
@@ -96,10 +96,9 @@
 				const [item] = items.splice(dragIndex, 1);
 				items.splice(dropIndex, 0, item);
 			}
-			//validateMessages(items);
 		},
 		onDragEnd: () => {
-			dndState.invalidDrop = true;
+			dndState.invalidDrop = false;
 		}
 	};
 
@@ -160,11 +159,7 @@
 				use:draggable={{
 					container: i.toString(),
 					dragData: item,
-					disabled:
-						item.command == Command.BANK_BACKUP ||
-						item.command == Command.PRESET_BACKUP ||
-						item.command == Command.UPDATE ||
-						item.command == Command.UNKNOWN
+					disabled: !(items[0].command == Command.BANK_BACKUP)
 				}}
 				animate:flip={{ duration: 200 }}
 				in:fade={{ duration: 150 }}
@@ -196,7 +191,7 @@
 						<Button
 							class="mx-2 size-8"
 							variant="outline"
-							onclick={() => {
+							onmousedown={() => {
 								tempMessage = {
 									command: item.command,
 									content: item.content,
@@ -240,6 +235,7 @@
 									>
 										<Icon icon="lucide:inspect" /> View contents
 									</DropdownMenu.Item>
+									<!--
 									<DropdownMenu.Item
 										onclick={() => {
 											tempMessage = {
@@ -252,6 +248,7 @@
 											editor = !editor;
 										}}>&thinsp;~&emsp;Full edit</DropdownMenu.Item
 									>
+									-->
 								</DropdownMenu.Group>
 							</DropdownMenu.Content>
 						</DropdownMenu.Root>
@@ -308,6 +305,7 @@
 					data.name = nameText;
 					saveMessage(items[index], data);
 					name = !name;
+					nameText = '';
 				}}>Save</Button
 			>
 		</Dialog.Footer>

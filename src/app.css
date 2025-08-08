@@ -9,7 +9,7 @@
 
 :root {
 	font-family: 'Poppins';
-	font-weight: 600;
+	font-weight: 500;
 	--radius: 0.25rem;
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);

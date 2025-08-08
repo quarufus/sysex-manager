@@ -319,9 +319,11 @@
 	}
 
 	function isSysex(s: string): boolean {
-		const t = s.split(' ');
-		if (t[0] != 'F0' || t[t.length - 1] != 'F7') return false;
-		return true;
+		if (s.includes('\n')) return false;
+		if (/^f0\s.*?\sf7$/i.test(s)) {
+			return true;
+		}
+		return false;
 	}
 </script>
 
@@ -403,21 +405,20 @@
 							>Create custom sysex commands to send to your device.</Dialog.Description
 						>
 					</Dialog.Header>
-					<Textarea placeholder="Type your command here." bind:value={customCmd} class="h-[30vh]" />
+					<Textarea placeholder="Type your command here." bind:value={customCmd} class="h-[20vh]" />
 					<Dialog.Footer>
-						<Dialog.Close>
-							<Button
-								type="submit"
-								disabled={!isSysex(customCmd)}
-								onclick={() => {
-									outgoingMessages.push(
-										parseMessage(
-											Uint8Array.from(customCmd.split(' ').map((v) => parseInt(v, 16))),
-											outgoingMessages[0]
-										)
-									);
-								}}>Add command</Button
-							>
+						<Dialog.Close
+							type="submit"
+							disabled={!isSysex(customCmd)}
+							onclick={() => {
+								outgoingMessages.push(
+									parseMessage(
+										Uint8Array.from(customCmd.split(' ').map((v) => parseInt(v, 16))),
+										outgoingMessages[0]
+									)
+								);
+							}}
+							>Add command
 						</Dialog.Close>
 					</Dialog.Footer>
 				</Dialog.Content>
